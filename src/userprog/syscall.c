@@ -16,9 +16,9 @@ static void
 syscall_handler (struct intr_frame *f UNUSED)
 {
 
-    if(*(f->esp) == SYS_HALT){
+    /*if(*(f->esp) == SYS_HALT){
       halt();
-    }
+    }*/
 
 
   printf ("system call!\n");
