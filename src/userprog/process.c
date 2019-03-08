@@ -440,9 +440,15 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 static bool
 setup_stack (void **esp, const char *file_name)
 {
+
+  //make deep copy of filename
+  char *temp_fn = file_name;
+  //dest -> src -> size
+  strlcpy(temp_fn, file_name, sizeof(file_name)); //deep copy
+
   uint8_t *kpage;
   bool success = false;
-  
+
   kpage = palloc_get_page (PAL_USER | PAL_ZERO);
   if (kpage != NULL)
     {
@@ -454,53 +460,78 @@ setup_stack (void **esp, const char *file_name)
         palloc_free_page (kpage);
     }
   char *token, *save_ptr;
-  char **argv = malloc(sizeof(char *) * strlen(file_name));
+  char **argv = malloc(sizeof(char *) * strlen(temp_fn));
   char *my_esp = (char *) *esp;
   int tokens = 0;
-  while((int)my_esp % 4 != 0){
-	uint8_t pad = 0;
-	my_esp -= 1;
-	memcpy(&pad, my_esp, 1);
-	
-  }
+
+  // while((int)my_esp % 4 != 0){
+  // 	uint8_t pad = 0;
+  // 	my_esp -= 1;
+  // 	memcpy(my_esp, &pad, sizeof(uint8_t));
+  // }
+
   printf("%s\n\n\n", "here");
-  for (token = strtok_r (file_name, " ", &save_ptr); token != NULL;
+  for (token = strtok_r (temp_fn, " ", &save_ptr); token != NULL;
         token = strtok_r (NULL, " ", &save_ptr)){
-	my_esp -= strlen(token) + 1;
-        memcpy(token, my_esp, strlen(token) + 1);
+	         my_esp -= strlen(token) + 1;
+           memcpy(my_esp, token, strlen(token) + 1);
+           printf ("'%s'\n", token);
 	argv[tokens] = token;
 	tokens++;
-	
-  }
-  printf("%s\n\n\n", "for loop");	
+
+}
+
+//  argv[tokens] = "\0"; //end of args
+
+  //aligning
+  printf("%s\n\n\n", "for loop");
+
   while((int)my_esp % 4 != 0){
-	uint8_t pad = 0;
-	my_esp -= 1;
-	memcpy(&pad, my_esp, 1);
+  	uint8_t pad = 0;
+  	my_esp -= sizeof(uint8_t);
+  	memcpy(my_esp, &pad, 1);
   }
-  printf("%s\n\n\n", "2nd while loop");	
-  char *sentinel = NULL;
-  my_esp -= sizeof(sentinel);
+
+  printf("%s\n\n\n", "2nd while loop");
+
+  //null sent
+  char *sentinel = "\0";
+  my_esp -= sizeof(char*); //sizeof(sentinel);
+
+  //is this right???
+//  my_esp = 0; //put zero after align but before addresses
+  memcpy(my_esp, &sentinel, sizeof(char*));
   printf("before memcpy\n\n\n\n\n\n");
-  memcpy(sentinel, my_esp, sizeof(sentinel));
-  
+  printf("%x \n\n\n\n", my_esp); //debug
+  //printf(argv[tokens] == NULL);
+//  memcpy(my_esp, sentinel, sizeof(sentinel));
+  printf("after memcpy\n\n\n\n\n\n");
+
   int i = tokens - 1;
   printf("hihello\n\n\n\n\n\n");
+
+
+  //pushing addresses of strings onto stack
   for(; i >= 0; i--){
-	printf("in for loop\n\n\n\n\n\n");
-	my_esp -= sizeof(char *);
-	memcpy(argv[i], my_esp, sizeof(char *));	
+  	printf("in for loop\n\n\n\n\n\n");
+  	my_esp -= sizeof(char *);
+    printf("%d \n\n\n\n\n", sizeof(char*));
+    printf("my esp %x\n\n\n\n\n", my_esp);
+    printf("%x \n\n\n", &argv[i]);
+  	memcpy(my_esp, &argv[i], sizeof(char *));
+    printf("post memcpy in for loop\n\n\n\n\n\n");
+
   }
-  
+
   my_esp -= sizeof(char **);
   *my_esp = argv;
   my_esp -= sizeof(int);
   *(int *)my_esp = tokens;
   my_esp -= sizeof(int);
-  
+
   *(int *)my_esp = 0;
   *esp = my_esp;
-  //hex_dump(esp, )
+  //hex_dump(PHYS_BASE, PHYS_BASE - *esp, ???,  1)
   return success;
 }
 
