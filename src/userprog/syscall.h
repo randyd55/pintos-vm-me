@@ -14,9 +14,9 @@ int wait(pid_t pid);
 bool create(const char *file, unsigned intial_size);
 
 bool remove(const char *file);
-*/
+
 int open(const char *file);
-/*
+
 int filesize(int fd);
 
 int read(int fd, void *buffer, unsigned size);

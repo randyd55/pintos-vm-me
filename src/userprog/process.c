@@ -214,7 +214,7 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
 bool
 load (const char *file_name, void (**eip) (void), void **esp)
 {
-  printf("hi\n\n\n\n");
+  //printf("file_name: %s\n\n\n\n", file_name);
   struct thread *t = thread_current ();
   struct Elf32_Ehdr ehdr;
   struct file *file = NULL;
@@ -229,10 +229,17 @@ load (const char *file_name, void (**eip) (void), void **esp)
   process_activate ();
 
   /* Open executable file. */
-  char *fn = malloc(strlen(file_name));
-  char ** save_ptr;
-  fn = strtok_r(file_name, " ", save_ptr);
-  printf("%s\n\n\n\n\n", fn);
+  char *fn_temp = malloc(strlen(file_name));
+  strlcpy(fn_temp, file_name, strlen(file_name) + 1);
+  char * save_ptr;
+  char * fn;
+
+  fn = strtok_r(fn_temp, " ", &save_ptr);
+
+
+
+
+
   file = filesys_open (fn);
   if (file == NULL)
     {
@@ -440,12 +447,10 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 static bool
 setup_stack (void **esp, const char *file_name)
 {
-
   //make deep copy of filename
-  char *temp_fn = file_name;
+  char *temp_fn = malloc(strlen(file_name) * sizeof(char));
   //dest -> src -> size
-  strlcpy(temp_fn, file_name, sizeof(file_name)); //deep copy
-
+  strlcpy(temp_fn, file_name, strlen(file_name) + 1); //deep copy
   uint8_t *kpage;
   bool success = false;
 
@@ -464,65 +469,60 @@ setup_stack (void **esp, const char *file_name)
   char *my_esp = (char *) *esp;
   int tokens = 0;
 
-  // while((int)my_esp % 4 != 0){
-  // 	uint8_t pad = 0;
-  // 	my_esp -= 1;
-  // 	memcpy(my_esp, &pad, sizeof(uint8_t));
-  // }
-
-  printf("%s\n\n\n", "here");
+  printf("my_esp b4: %p\n\n", my_esp);
   for (token = strtok_r (temp_fn, " ", &save_ptr); token != NULL;
         token = strtok_r (NULL, " ", &save_ptr)){
-	         my_esp -= strlen(token) + 1;
-           memcpy(my_esp, token, strlen(token) + 1);
-           printf ("'%s'\n", token);
-	argv[tokens] = token;
-	tokens++;
+  		if(tokens != 0){
+	  	    printf("length: %d String: %s\n\n",strlen(token) + 1, token);
+		    my_esp -= strlen(token) + 1;
 
-}
+	        memcpy(my_esp, token, strlen(token) + 1);
 
+			argv[tokens] = my_esp;
+			printf(" AHHHHHHHH ! %p \n\n\n\n\n", argv[tokens]);
+			
+		}
+		tokens++;	
+  }
+
+  argv[tokens] = "\0";
+  printf("my_esp after for loop: %p\n\n\n", my_esp);
+  int i = 0;
 //  argv[tokens] = "\0"; //end of args
 
   //aligning
-  printf("%s\n\n\n", "for loop");
 
-  while((int)my_esp % 4 != 0){
+  while(*my_esp % 4 != 0){
   	uint8_t pad = 0;
   	my_esp -= sizeof(uint8_t);
   	memcpy(my_esp, &pad, 1);
+  	printf("hi\n\n\n\n");
   }
-
-  printf("%s\n\n\n", "2nd while loop");
+  printf("my_esp after while crocodile: %p\n\n\n", my_esp);
 
   //null sent
-  char *sentinel = "\0";
-  my_esp -= sizeof(char*); //sizeof(sentinel);
-
+  /*my_esp -= 4;
+  printf("my_esp: %p\n\n\n", my_esp);
+  char *sentinel = "\0";*/
+   //sizeof(sentinel);
   //is this right???
-//  my_esp = 0; //put zero after align but before addresses
-  memcpy(my_esp, &sentinel, sizeof(char*));
-  printf("before memcpy\n\n\n\n\n\n");
-  printf("%x \n\n\n\n", my_esp); //debug
-  //printf(argv[tokens] == NULL);
-//  memcpy(my_esp, sentinel, sizeof(sentinel));
-  printf("after memcpy\n\n\n\n\n\n");
+  *my_esp = 0; 
+  printf("my_esp: %p\n\n\n", my_esp);//put zero after align but before addresses
+  //memcpy(my_esp, &sentinel, sizeof(char*));
 
-  int i = tokens - 1;
+  i = tokens;
   printf("hihello\n\n\n\n\n\n");
 
 
   //pushing addresses of strings onto stack
   for(; i >= 0; i--){
-  	printf("in for loop\n\n\n\n\n\n");
   	my_esp -= sizeof(char *);
-    printf("%d \n\n\n\n\n", sizeof(char*));
-    printf("my esp %x\n\n\n\n\n", my_esp);
-    printf("%x \n\n\n", &argv[i]);
-  	memcpy(my_esp, &argv[i], sizeof(char *));
-    printf("post memcpy in for loop\n\n\n\n\n\n");
-
+  	//memcpy(my_esp, &argv[i], sizeof(char *));
+  	// printf("arg[%d]: address: %s\n\n", i, &argv[i]);
+  	*my_esp = argv[i];
+    
   }
-
+  printf("after for loop\n\n\n\n");
   my_esp -= sizeof(char **);
   *my_esp = argv;
   my_esp -= sizeof(int);
@@ -530,8 +530,10 @@ setup_stack (void **esp, const char *file_name)
   my_esp -= sizeof(int);
 
   *(int *)my_esp = 0;
+  printf("my_esp: %p\n\n\n", my_esp);
   *esp = my_esp;
-  //hex_dump(PHYS_BASE, PHYS_BASE - *esp, ???,  1)
+
+  hex_dump(*esp, *esp, PHYS_BASE - *esp,  1);
   return success;
 }
 
