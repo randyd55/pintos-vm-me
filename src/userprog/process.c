@@ -236,10 +236,6 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
   fn = strtok_r(fn_temp, " ", &save_ptr);
 
-
-
-
-
   file = filesys_open (fn);
   if (file == NULL)
     {
@@ -447,10 +443,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 static bool
 setup_stack (void **esp, const char *file_name)
 {
-  //make deep copy of filename
-  char *temp_fn = malloc(strlen(file_name) * sizeof(char));
-  //dest -> src -> size
-  strlcpy(temp_fn, file_name, strlen(file_name) + 1); //deep copy
+
   uint8_t *kpage;
   bool success = false;
 
@@ -464,73 +457,57 @@ setup_stack (void **esp, const char *file_name)
       else
         palloc_free_page (kpage);
     }
+
+
+  //make deep copy of filename
+  char *temp_fn = malloc(strlen(file_name) * sizeof(char));
+  strlcpy(temp_fn, file_name, strlen(file_name) + 1); //deep copy
+
   char *token, *save_ptr;
-  char **argv = malloc(sizeof(char *) * strlen(temp_fn));
+  char **argv = malloc(sizeof(char *) * strlen(temp_fn)); //change later
   char *my_esp = (char *) *esp;
-  int tokens = 0;
-
-  printf("my_esp b4: %p\n\n", my_esp);
+  int argc = 0;
+  bool isArg= false; 
+  char* argv_ptr;
+  int i;
   for (token = strtok_r (temp_fn, " ", &save_ptr); token != NULL;
-        token = strtok_r (NULL, " ", &save_ptr)){
-  		if(tokens != 0){
-	  	    printf("length: %d String: %s\n\n",strlen(token) + 1, token);
-		    my_esp -= strlen(token) + 1;
-
-	        memcpy(my_esp, token, strlen(token) + 1);
-
-			argv[tokens] = my_esp;
-			printf(" AHHHHHHHH ! %p \n\n\n\n\n", argv[tokens]);
-			
-		}
-		tokens++;	
+    token = strtok_r (NULL, " ", &save_ptr)){
+    //Ignore first token, executable name
+    if(isArg){
+      //Count and store parameter strings
+      argv[argc]=token;
+      argc++;	
+    } else{
+      isArg=true;
+    }
   }
-
-  argv[tokens] = "\0";
-  printf("my_esp after for loop: %p\n\n\n", my_esp);
-  int i = 0;
-//  argv[tokens] = "\0"; //end of args
-
-  //aligning
-
+  i= argc-1;
+  //Copy argv onto memory and store pointers of my_esp into argv
+  for (; i >= 0; i--){
+    my_esp -= strlen(argv[i]) + 1;
+    memcpy(my_esp, argv[i], strlen(argv[i]) + 1);
+    argv[i] = my_esp;
+  }
+  //Add padding after strings stored to stack
   while(*my_esp % 4 != 0){
-  	uint8_t pad = 0;
-  	my_esp -= sizeof(uint8_t);
-  	memcpy(my_esp, &pad, 1);
-  	printf("hi\n\n\n\n");
+    my_esp -= 1;
   }
-  printf("my_esp after while crocodile: %p\n\n\n", my_esp);
-
-  //null sent
-  /*my_esp -= 4;
-  printf("my_esp: %p\n\n\n", my_esp);
-  char *sentinel = "\0";*/
-   //sizeof(sentinel);
-  //is this right???
-  *my_esp = 0; 
-  printf("my_esp: %p\n\n\n", my_esp);//put zero after align but before addresses
-  //memcpy(my_esp, &sentinel, sizeof(char*));
-
-  i = tokens;
-  printf("hihello\n\n\n\n\n\n");
-
-
+  i = argc;
   //pushing addresses of strings onto stack
   for(; i >= 0; i--){
-  	my_esp -= sizeof(char *);
-  	//memcpy(my_esp, &argv[i], sizeof(char *));
-  	// printf("arg[%d]: address: %s\n\n", i, &argv[i]);
-  	*my_esp = argv[i];
-    
+    my_esp -= sizeof(char *);
+    memcpy(my_esp, &argv[i], sizeof(char *));	
   }
-  printf("after for loop\n\n\n\n");
+  argv_ptr=my_esp;
+  //Push address of argv onto stack
   my_esp -= sizeof(char **);
-  *my_esp = argv;
+  memcpy(my_esp, &argv_ptr, sizeof(char*));
+  //Push argc onto stack
   my_esp -= sizeof(int);
-  *(int *)my_esp = tokens;
+  *(int *)my_esp = argc;
+  //Push void* onto stack for return
   my_esp -= sizeof(int);
-
   *(int *)my_esp = 0;
-  printf("my_esp: %p\n\n\n", my_esp);
   *esp = my_esp;
 
   hex_dump(*esp, *esp, PHYS_BASE - *esp,  1);
