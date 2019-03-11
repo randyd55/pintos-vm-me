@@ -453,62 +453,121 @@ setup_stack (void **esp, const char *file_name)
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
       if (success){
         *esp = PHYS_BASE;
-	} //temp
-      else
-        palloc_free_page (kpage);
-    }
+
+            //make deep copy of filename
+            char *temp_fn = malloc(strlen(file_name) * sizeof(char));
+            strlcpy(temp_fn, file_name, strlen(file_name) + 1); //deep copy
+
+            char *token, *save_ptr;
+            char **argv = malloc(sizeof(char *) * strlen(temp_fn));
+            char *my_esp = (char *) *esp;
+            int argc = 0;
+            
+            char* argv_ptr;
+            int i;
+            for (token = strtok_r (temp_fn, " ", &save_ptr); token != NULL;
+              token = strtok_r (NULL, " ", &save_ptr)){
+
+                argv[argc]=token;
+                argc++;	
+            }
+
+            i= argc-1;
+            //Copy argv onto memory and store pointers of my_esp into argv
+            for (; i >= 0; i--){
+              my_esp -= strlen(argv[i]) + 1;
+              
+              /*check for overflow*/
+              if((int) my_esp < PHYS_BASE - 4096){
+                  palloc_free_page (kpage);
+                  return false; //failed
+              }
+
+              memcpy(my_esp, argv[i], strlen(argv[i]) + 1);
+              argv[i] = my_esp;
+            }
+            //Add padding after strings stored to stack
+            while((int) my_esp % 4 != 0){
+
+              my_esp -= 1;
+                
+              /*check for overflow*/
+              if((int) my_esp < PHYS_BASE - 4096){
+                  palloc_free_page (kpage);
+                  return false; //failed
+              }
+
+            }
+            i = argc - 1;
+            my_esp -= sizeof(char*); //null sent
+              
+              /*check for overflow*/
+              if((int) my_esp < PHYS_BASE - 4096){
+                  palloc_free_page (kpage);
+                  return false; //failed
+              }
+
+            
+            //pushing addresses of strings onto stack
+
+            for(; i >= 0; i--){
+              my_esp -= sizeof(char *);
+                
+              /*check for overflow*/
+              if((int) my_esp < PHYS_BASE - 4096){
+                  palloc_free_page (kpage);
+                  return false; //failed
+              }
+
+              memcpy(my_esp, &argv[i], sizeof(char *));
+
+            }
+
+            argv_ptr=my_esp;
+
+            //Push address of argv onto stack
+            my_esp -= sizeof(char **);
+
+              /*check for overflow*/
+              if((int) my_esp < PHYS_BASE - 4096){
+                  palloc_free_page (kpage);
+                  return false; //failed
+              }
 
 
-  //make deep copy of filename
-  char *temp_fn = malloc(strlen(file_name) * sizeof(char));
-  strlcpy(temp_fn, file_name, strlen(file_name) + 1); //deep copy
+            memcpy(my_esp, &argv_ptr, sizeof(char*));
 
-  char *token, *save_ptr;
-  char **argv = malloc(sizeof(char *) * strlen(temp_fn)); //change later
-  char *my_esp = (char *) *esp;
-  int argc = 0;
-  bool isArg= false; 
-  char* argv_ptr;
-  int i;
-  for (token = strtok_r (temp_fn, " ", &save_ptr); token != NULL;
-    token = strtok_r (NULL, " ", &save_ptr)){
-    //Ignore first token, executable name
-    if(isArg){
-      //Count and store parameter strings
-      argv[argc]=token;
-      argc++;	
-    } else{
-      isArg=true;
-    }
-  }
-  i= argc-1;
-  //Copy argv onto memory and store pointers of my_esp into argv
-  for (; i >= 0; i--){
-    my_esp -= strlen(argv[i]) + 1;
-    memcpy(my_esp, argv[i], strlen(argv[i]) + 1);
-    argv[i] = my_esp;
-  }
-  //Add padding after strings stored to stack
-  while(*my_esp % 4 != 0){
-    my_esp -= 1;
-  }
-  i = argc;
-  //pushing addresses of strings onto stack
-  for(; i >= 0; i--){
-    my_esp -= sizeof(char *);
-    memcpy(my_esp, &argv[i], sizeof(char *));	
-  }
-  argv_ptr=my_esp;
-  //Push address of argv onto stack
-  my_esp -= sizeof(char **);
-  memcpy(my_esp, &argv_ptr, sizeof(char*));
-  //Push argc onto stack
-  my_esp -= sizeof(int);
-  *(int *)my_esp = argc;
-  //Push void* onto stack for return
-  my_esp -= sizeof(int);
-  *(int *)my_esp = 0;
-  *esp = my_esp;
+            //Push argc onto stack
+            my_esp -= sizeof(int);
+
+              
+              /*check for overflow*/
+              if((int) my_esp < PHYS_BASE - 4096){
+                  palloc_free_page (kpage);
+                  return false; //failed
+              }
+
+
+            *(int *)my_esp = argc;
+
+            //Push void* onto stack for return
+            my_esp -= sizeof(int);
+
+              
+              /*check for overflow*/
+              if((int) my_esp < PHYS_BASE - 4096){
+                  palloc_free_page (kpage);
+                  return false; //failed
+              }
+
+
+            *(int *)my_esp = 0;
+            *esp = my_esp;
+
+                  } //temp
+                else
+                  palloc_free_page (kpage);
+              }
 
   hex_dump(*esp, *esp, PHYS_BASE - *esp,  1);
   return success;
