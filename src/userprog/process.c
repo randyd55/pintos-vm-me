@@ -214,7 +214,6 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
 bool
 load (const char *file_name, void (**eip) (void), void **esp)
 {
-  //printf("file_name: %s\n\n\n\n", file_name);
   struct thread *t = thread_current ();
   struct Elf32_Ehdr ehdr;
   struct file *file = NULL;
@@ -527,7 +526,7 @@ setup_stack (void **esp, const char *file_name)
 
             //Push address of argv onto stack
             my_esp -= sizeof(char **);
-
++
               /*check for overflow*/
               if((int) my_esp < PHYS_BASE - 4096){
                   palloc_free_page (kpage);
