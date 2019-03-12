@@ -4,6 +4,7 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
+#include "filesys/file.h"
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -17,6 +18,7 @@ enum thread_status
 /* Thread identifier type.
    You can redefine this to whatever type you like. */
 typedef int tid_t;
+typedef int pid_t;
 #define TID_ERROR ((tid_t) -1)          /* Error value for tid_t. */
 
 /* Thread priorities. */
@@ -94,6 +96,14 @@ struct thread
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
+    int exit_status; /*exit status of the thread*/
+    struct file *files[126]; /*array of file pointers*/
+    int fd; /*number of current files*/
+    pid_t pid; /* Process ID*/
+    struct thread* parent;
+
+
+
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */

@@ -20,6 +20,9 @@
    of thread.h for details. */
 #define THREAD_MAGIC 0xcd6abf4b
 
+static int EXIT_ERR = 1;
+static int EXIT_SUCCESS = 0;
+
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
 static struct list ready_list;
@@ -285,6 +288,8 @@ thread_exit (void)
   ASSERT (!intr_context ());
 
 #ifdef USERPROG
+  //thread_current
+ // return thread
   process_exit ();
 #endif
 
@@ -296,6 +301,7 @@ thread_exit (void)
   thread_current ()->status = THREAD_DYING;
   schedule ();
   NOT_REACHED ();
+
 }
 
 /* Yields the CPU.  The current thread is not put to sleep and
@@ -454,17 +460,18 @@ static void
 init_thread (struct thread *t, const char *name, int priority)
 {
   enum intr_level old_level;
-  
   ASSERT (t != NULL);
   ASSERT (PRI_MIN <= priority && priority <= PRI_MAX);
-  ASSERT (name != NULL);
-
+  ASSERT (name != NULL);    
   memset (t, 0, sizeof *t);
+  thread_current()->fd = 0;
   t->status = THREAD_BLOCKED;
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->magic = THREAD_MAGIC;
+  t->exit_status = -1;
+  t->fd = -1;
 
   old_level = intr_disable();
   list_push_back (&all_list, &t->allelem);

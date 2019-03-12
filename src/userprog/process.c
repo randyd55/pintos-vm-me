@@ -526,9 +526,8 @@ setup_stack (void **esp, const char *file_name)
 
             //Push address of argv onto stack
             my_esp -= sizeof(char **);
-+
               /*check for overflow*/
-              if((int) my_esp < PHYS_BASE - 4096){
+            if((int) my_esp < PHYS_BASE - 4096){
                   palloc_free_page (kpage);
                   return false; //failed
               }

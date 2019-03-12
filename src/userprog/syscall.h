@@ -3,13 +3,13 @@
 
 #include "threads/interrupt.h"
 
-int *PHYS_BASE = (int *)0xC0000000; //CHANGE LATER
+//int *PHYS_BASE = (int *)0xC0000000; //CHANGE LATER
 
 void syscall_init (void);
  /* terminates Pintos by calling shutdown_power_off()*/
 void halt(void);
 /*terminates the current user program*/
-void exit(int status, struct intr_frame *f);
+void exit(int status);
 /*runs the executable whos name is given by cmd_line*/
 //pid_t exec(const char *cmd_line);
 
