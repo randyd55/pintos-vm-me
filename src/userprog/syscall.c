@@ -4,7 +4,7 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 //#include "no-vm/multi-oom.c"
-#include "filesys/file.c"
+//#include "filesys/file.c"
 #include "filesys/filesys.c"
 //#include "vaddr.h"
 
