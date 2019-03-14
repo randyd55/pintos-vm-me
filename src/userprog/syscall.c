@@ -1,17 +1,13 @@
-#include <stdio.h>
 #include "userprog/syscall.h"
+#include <stdio.h>
 #include <syscall-nr.h>
-//#include "threads/thread.h"
 #include "filesys/filesys.h"
 #include "userprog/process.h"
-//#include "vaddr.h"
+#include "threads/vaddr.h"
 #include "devices/input.h"
-
-
 static void syscall_handler (struct intr_frame *);
 
 
-int *PHYS_BASE = (int *)0xC0000000;
 int fd_count = 1;
 struct lock filesys_lock;
 
@@ -25,27 +21,35 @@ syscall_init (void)
 static void
 syscall_handler (struct intr_frame *f UNUSED)
 {
+  if(!check_pointer(f->esp))
+    return;
   switch(*((uint32_t *) (f->esp))){
     case SYS_EXEC :
-        f->eax=exec(((char *) (f->esp + 4) ));
+        if (check_pointer(f->esp + 4))
+          f->eax=exec(((char *) (f->esp + 4)));
         break;    
     case SYS_WRITE :
-        f->eax=write(*((uint32_t *) (f->esp + 4) ),((void*) (f->esp + 8) ),*((unsigned *) (f->esp + 12) ));
+        if (check_pointer(f->esp + 4) && check_pointer(f->esp + 8) && check_pointer(f->esp + 12))
+          f->eax=write(*((uint32_t *) (f->esp + 4) ),((void*) (f->esp + 8) ),*((unsigned *) (f->esp + 12) ));
         break;
     case SYS_READ :
-        f->eax=read(*((uint32_t *) (f->esp + 4) ),((void*) (f->esp + 8) ),*((unsigned *) (f->esp + 12) ));
+       if (check_pointer(f->esp + 4) && check_pointer(f->esp + 8) && check_pointer(f->esp + 12))
+          f->eax=read(*((uint32_t *) (f->esp + 4) ),((void*) (f->esp + 8) ),*((unsigned *) (f->esp + 12) ));
         break;
     case SYS_OPEN :
-        f->eax=open(((char *) (f->esp + 4) ));
+        if (check_pointer(f->esp + 4))
+          f->eax=open(((char *) (f->esp + 4) ));
         break;
     case SYS_CLOSE :
-        close(*((uint32_t *) (f->esp + 4) ));
+        if (check_pointer(f->esp + 4))
+          close(*((uint32_t *) (f->esp + 4) ));
         break;
     case SYS_HALT :
         halt();
         break;
     case SYS_EXIT :
-        exit(*((uint32_t *) (f->esp + 4) ));
+        if (check_pointer(f->esp + 4))
+          exit(*((uint32_t *) (f->esp + 4) ));
         break;
 
         //f->eax = use this for any methods that have a return value
@@ -57,6 +61,13 @@ syscall_handler (struct intr_frame *f UNUSED)
 
 
   printf ("system call!\n");
+}
+
+bool check_pointer(uint32_t * stack_ptr){
+  if (stack_ptr == NULL || is_kernel_vaddr(stack_ptr) || !is_user_vaddr(stack_ptr) || pagedir_get_page(thread_current() -> pagedir, stack_ptr) == NULL)
+    return false;
+  return true;
+
 }
 
 /*  */

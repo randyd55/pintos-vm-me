@@ -6,6 +6,7 @@
 #include "threads/synch.h"
 #include "devices/shutdown.h"
 
+
 int wait(pid_t pid);
 
 void syscall_init (void);
@@ -38,4 +39,5 @@ void close(int fd);
 
 int getFd(void);
 
+bool check_pointer(uint32_t * stack_ptr);
 #endif /* userprog/syscall.h */
