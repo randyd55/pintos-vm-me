@@ -75,13 +75,8 @@ void halt(void){
 }
 
 void exit(int status){
-  struct thread *t = thread_current();
-  t->called_exit = true; //this thread exited properly
   t->exit_status = status;
-
-
-  sema_up(t->child_exit_sema);
-  sema_down(t->parent_wait_sema);
+  t->called_exit = true; //this thread exited properly
   thread_exit();
 }
 

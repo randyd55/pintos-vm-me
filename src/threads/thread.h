@@ -105,6 +105,7 @@ struct thread
 
     struct semaphore* child_exit_sema;
     struct semaphore* parent_wait_sema;
+    struct semaphore* exec_sema;
 
     struct list_elem child_elem;
     struct list children;

@@ -208,6 +208,52 @@ thread_create (const char *name, int priority,
   return tid;
 }
 
+// NOT SURE ABOUT THIS BUT I THINK IT WORKS: added a parent parameter to keep track of the parent of a thread. Not sure how else to do it upon initialization
+// might be ok bc thread_create isn't really called anywhere else except in process/project 1 tests.
+// tid_t
+// thread_create (const char *name, int priority,
+//                thread_func *function, struct thread *parent,void *aux) 
+// {
+//   struct thread *t;
+//   struct kernel_thread_frame *kf;
+//   struct switch_entry_frame *ef;
+//   struct switch_threads_frame *sf;
+//   tid_t tid;
+
+//   ASSERT (function != NULL);
+
+//   /* Allocate thread. */
+//   t = palloc_get_page (PAL_ZERO);
+//   if (t == NULL)
+//     return TID_ERROR;
+
+//   /* Initialize thread. */
+//   init_thread (t, name, priority, parent);
+//   tid = t->tid = allocate_tid ();
+//   t->pid=t->tid;
+
+//   /* Stack frame for kernel_thread(). */
+//   kf = alloc_frame (t, sizeof *kf);
+//   kf->eip = NULL;
+//   kf->function = function;
+//   kf->aux = aux;
+
+//   /* Stack frame for switch_entry(). */
+//   ef = alloc_frame (t, sizeof *ef);
+//   ef->eip = (void (*) (void)) kernel_thread;
+
+//   /* Stack frame for switch_threads(). */
+//   sf = alloc_frame (t, sizeof *sf);
+//   sf->eip = switch_entry;
+//   sf->ebp = 0;
+      
+//   /* Add to run queue. */
+//   thread_unblock (t);
+//   sema_up(t->parent->exec_sema);
+//   return tid;
+// }
+
+
 /* Puts the current thread to sleep.  It will not be scheduled
    again until awoken by thread_unblock().
 
@@ -288,8 +334,12 @@ thread_exit (void)
   ASSERT (!intr_context ());
 
   intr_disable (); //disable while working with gloab vars
-  thread_current()->called_thread_exit = true;
+  struct thread *t = thread_current();
+  t->called_thread_exit = true;
   intr_enable();
+  sema_up(t->child_exit_sema);
+  sema_down(t->parent_wait_sema);
+
 
 #ifdef USERPROG
   //thread_current
@@ -479,7 +529,7 @@ init_thread (struct thread *t, const char *name, int priority)
   //initialize semaphores for syscall synchronization
   sema_init(&(t->child_exit_sema), 0);
   sema_init(&(t->parent_wait_sema), 0);
-
+  sema_init(&(t->exec_sema), 0);
   list_init(&(t->children)); 
 
 
@@ -488,6 +538,38 @@ init_thread (struct thread *t, const char *name, int priority)
   list_push_back (&all_list, &t->allelem);
   intr_set_level(old_level);
 }
+/*  NOT SURE ABOUT THIS BUT I THINK THIS WILL WORK
+static void
+init_thread (struct thread *t, const char *name, int priority, struct thread *parent)
+{
+  enum intr_level old_level;
+  ASSERT (t != NULL);
+  ASSERT (PRI_MIN <= priority && priority <= PRI_MAX);
+  ASSERT (name != NULL);    
+  memset (t, 0, sizeof *t);
+  t->status = THREAD_BLOCKED;
+  strlcpy (t->name, name, sizeof t->name);
+  t->stack = (uint8_t *) t + PGSIZE;
+  t->priority = priority;
+  t->magic = THREAD_MAGIC;
+  t->exit_status = -1;
+  t->fd = -1;
+  //t->pid=t->tid;
+  //initialize semaphores for syscall synchronization
+  sema_init(&(t->child_exit_sema), 0);
+  sema_init(&(t->parent_wait_sema), 0);
+  sema_init(&(t->exec_sema), 0);
+  list_init(&(t->children)); 
+  if(parent != NULL)
+    t->parent = parent;
+
+
+  old_level = intr_disable();
+  list_push_back (&all_list, &t->allelem);
+  intr_set_level(old_level);
+}
+*/
+
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
    returns a pointer to the frame's base. */

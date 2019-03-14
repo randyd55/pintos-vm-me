@@ -41,10 +41,11 @@ process_execute (const char *file_name)
   strlcpy (fn_copy, file_name, PGSIZE);
 
   /* Create a new thread to execute FILE_NAME. */
+  //tid = thread_create (file_name, PRI_DEFAULT, start_process, t, fn_copy);  uhh i think this should wrk but idk lol
   tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
-
   //SEMA DOWN
   //SEMA UP AT THE END AFTER IT HAS LOADED
+  sema_down(t->exec_sema);
   ASSERT(getThreadByTID(tid)!=NULL);
 
   list_push_front(&(t->children),&(getThreadByTID(tid)->child_elem));
