@@ -42,9 +42,14 @@ process_execute (const char *file_name)
 
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+
+  //SEMA DOWN
+  //SEMA UP AT THE END AFTER IT HAS LOADED
   ASSERT(getThreadByTID(tid)!=NULL);
+
   list_push_front(&(t->children),&(getThreadByTID(tid)->child_elem));
   printf("Add child\n");
+
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy);
   return tid;
@@ -478,21 +483,21 @@ setup_stack (void **esp, const char *file_name)
             char **argv = malloc(sizeof(char *) * strlen(temp_fn));
             char *my_esp = (char *) *esp;
             int argc = 0;
-            
+
             char* argv_ptr;
             int i;
             for (token = strtok_r (temp_fn, " ", &save_ptr); token != NULL;
               token = strtok_r (NULL, " ", &save_ptr)){
 
                 argv[argc]=token;
-                argc++;	
+                argc++;
             }
 
             i= argc-1;
             //Copy argv onto memory and store pointers of my_esp into argv
             for (; i >= 0; i--){
               my_esp -= strlen(argv[i]) + 1;
-              
+
               /*check for overflow*/
               if((int) my_esp < PHYS_BASE - 4096){
                   palloc_free_page (kpage);
@@ -506,7 +511,7 @@ setup_stack (void **esp, const char *file_name)
             while((int) my_esp % 4 != 0){
 
               my_esp -= 1;
-                
+
               /*check for overflow*/
               if((int) my_esp < PHYS_BASE - 4096){
                   palloc_free_page (kpage);
@@ -516,19 +521,19 @@ setup_stack (void **esp, const char *file_name)
             }
             i = argc - 1;
             my_esp -= sizeof(char*); //null sent
-              
+
               /*check for overflow*/
               if((int) my_esp < PHYS_BASE - 4096){
                   palloc_free_page (kpage);
                   return false; //failed
               }
 
-            
+
             //pushing addresses of strings onto stack
 
             for(; i >= 0; i--){
               my_esp -= sizeof(char *);
-                
+
               /*check for overflow*/
               if((int) my_esp < PHYS_BASE - 4096){
                   palloc_free_page (kpage);
@@ -555,7 +560,7 @@ setup_stack (void **esp, const char *file_name)
             //Push argc onto stack
             my_esp -= sizeof(int);
 
-              
+
               /*check for overflow*/
               if((int) my_esp < PHYS_BASE - 4096){
                   palloc_free_page (kpage);
@@ -568,7 +573,7 @@ setup_stack (void **esp, const char *file_name)
             //Push void* onto stack for return
             my_esp -= sizeof(int);
 
-              
+
               /*check for overflow*/
               if((int) my_esp < PHYS_BASE - 4096){
                   palloc_free_page (kpage);

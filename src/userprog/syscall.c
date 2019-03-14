@@ -21,13 +21,15 @@ syscall_init (void)
 static void
 syscall_handler (struct intr_frame *f UNUSED)
 {
+
+  printf("YOU SHOULD BE IN SYSCALL HANDLER \n\n\n\n\n");
   if(!check_pointer(f->esp))
     return;
   switch(*((uint32_t *) (f->esp))){
     case SYS_EXEC :
         if (check_pointer(f->esp + 4))
           f->eax=exec(((char *) (f->esp + 4)));
-        break;    
+        break;
     case SYS_WRITE :
         if (check_pointer(f->esp + 4) && check_pointer(f->esp + 8) && check_pointer(f->esp + 12))
           f->eax=write(*((uint32_t *) (f->esp + 4) ),((void*) (f->esp + 8) ),*((unsigned *) (f->esp + 12) ));
@@ -53,12 +55,9 @@ syscall_handler (struct intr_frame *f UNUSED)
         break;
 
         //f->eax = use this for any methods that have a return value
-
         //add write case and all other cases
 
   }
-  //hex_dump(*((uint32_t *) f->esp), *((uint32_t *) f->esp), PHYS_BASE - *((uint32_t *) f->esp),  1);
-
 
   printf ("system call!\n");
 }
@@ -80,10 +79,9 @@ void exit(int status){
   t->called_exit = true; //this thread exited properly
   t->exit_status = status;
 
-  
+
   sema_up(t->child_exit_sema);
   sema_down(t->parent_wait_sema);
-
   thread_exit();
 }
 
@@ -134,13 +132,13 @@ int getFd(){
 }
 int read(int fd, const void *buffer, unsigned size){
 
-  int bytes_read = 0, i = 0; 
+  int bytes_read = 0, i = 0;
   lock_acquire(&filesys_lock);
   struct thread* t = thread_current();
 
   if(fd == 0){
 
-    
+
     for(; i < size; i++){
       *(uint8_t *) buffer = input_getc();
       buffer++;
@@ -153,7 +151,7 @@ int read(int fd, const void *buffer, unsigned size){
   } else { //file exists
     bytes_read = file_read(t->files[fd - 2], buffer, size);
   }
-  
+
   lock_release(&filesys_lock);
   return bytes_read;
 }
@@ -172,21 +170,24 @@ int write(int fd, const void *buffer, unsigned size){
 
   int written = 0;
   printf("Yolo\n\n\n");
-  printf("%s",buffer);
+  printf("%s", buffer);
   lock_acquire(&filesys_lock);
   struct thread* t = thread_current();
-  if(fd == 0)
+  if(fd <= 0){
     exit(-1);
+  }
   else if(fd == 1)
   {
     printf("%s\n",buffer);
-    //putbuf(buffer, size);
-    //written = size;
+    putbuf(buffer, size);
+    //lock release
+    return size;
 
-  } else if(t->files[fd-2] != NULL) 
+  } else if(t->files[fd] != NULL) //ont subtract
 
-  {
-    written=file_write(t->files[fd-2], buffer,size);
+  //lock release
+    written = file_write(t->files[fd], buffer,size);
+
   }
 
   lock_release(&filesys_lock);
@@ -203,8 +204,10 @@ void close(int fd){
   lock_acquire(&filesys_lock);
 
   if(t->files[fd-2] != NULL){ //if the file exists
+
     file_close (t->files[fd -2]); //close file
     t->files[fd-2] = NULL; //free up spot
+
   }
 
   lock_release(&filesys_lock);
