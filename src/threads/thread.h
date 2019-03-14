@@ -101,6 +101,14 @@ struct thread
     int fd; /*number of current files*/
     pid_t pid; /* Process ID*/
     struct thread* parent;
+    bool called_exit, called_thread_exit;
+
+    struct semaphore* child_exit_sema;
+    struct semaphore* parent_wait_sema;
+
+    struct list_elem child_elem;
+    struct list children;
+
 
 
 
@@ -149,5 +157,7 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+struct thread* getChildByPID(pid_t pid);
+struct thread* getThreadByTID(tid_t tid);
 
 #endif /* threads/thread.h */

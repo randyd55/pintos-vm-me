@@ -31,6 +31,7 @@ process_execute (const char *file_name)
 {
   char *fn_copy;
   tid_t tid;
+  struct thread* t=thread_current();
 
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
@@ -41,6 +42,9 @@ process_execute (const char *file_name)
 
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+  ASSERT(getThreadByTID(tid)!=NULL);
+  list_push_front(&(t->children),&(getThreadByTID(tid)->child_elem));
+  printf("Add child\n");
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy);
   return tid;
@@ -89,11 +93,24 @@ start_process (void *file_name_)
 int
 process_wait (tid_t child_tid UNUSED)
 {
-
-  while(1){
-
-    //temp infinite loop
+  struct thread* child;
+  int status;
+  printf("Children: %d\n", list_size(&(thread_current()->children)));
+  child=getChildByPID(child_tid);
+  if(child==NULL)
+    printf("Thread died?");
+  if(child==NULL||(!child->called_exit & child->called_thread_exit)){
+    return -1; //thread died improperly
   }
+  printf("Thread didnt die weird\n");
+  sema_down(&(child->child_exit_sema)); //Waits on child to call exit
+  printf("Set exit status\n");
+  status=child->exit_status;
+  sema_up(&(child-> parent_wait_sema)); //Tells child it has collected exit status
+  list_remove(&(child->child_elem));
+  printf("Remove dead child\n");
+  return status;
+
 
 }
 
@@ -567,7 +584,7 @@ setup_stack (void **esp, const char *file_name)
                   palloc_free_page (kpage);
               }
 
-  hex_dump(*esp, *esp, PHYS_BASE - *esp,  1);
+  //hex_dump(*esp, *esp, PHYS_BASE - *esp,  1);
   return success;
 }
 

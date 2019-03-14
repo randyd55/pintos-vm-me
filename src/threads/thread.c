@@ -185,7 +185,7 @@ thread_create (const char *name, int priority,
   /* Initialize thread. */
   init_thread (t, name, priority);
   tid = t->tid = allocate_tid ();
-
+  t->pid=t->tid;
 
   /* Stack frame for kernel_thread(). */
   kf = alloc_frame (t, sizeof *kf);
@@ -286,6 +286,10 @@ void
 thread_exit (void) 
 {
   ASSERT (!intr_context ());
+
+  intr_disable (); //disable while working with gloab vars
+  thread_current()->called_thread_exit = true;
+  intr_enable();
 
 #ifdef USERPROG
   //thread_current
@@ -464,7 +468,6 @@ init_thread (struct thread *t, const char *name, int priority)
   ASSERT (PRI_MIN <= priority && priority <= PRI_MAX);
   ASSERT (name != NULL);    
   memset (t, 0, sizeof *t);
-  thread_current()->fd = 0;
   t->status = THREAD_BLOCKED;
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
@@ -472,6 +475,14 @@ init_thread (struct thread *t, const char *name, int priority)
   t->magic = THREAD_MAGIC;
   t->exit_status = -1;
   t->fd = -1;
+  //t->pid=t->tid;
+  //initialize semaphores for syscall synchronization
+  sema_init(&(t->child_exit_sema), 0);
+  sema_init(&(t->parent_wait_sema), 0);
+
+  list_init(&(t->children)); 
+
+
 
   old_level = intr_disable();
   list_push_back (&all_list, &t->allelem);
@@ -591,3 +602,28 @@ allocate_tid (void)
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
+
+struct thread* getChildByPID(pid_t pid){
+  struct thread* t=thread_current();
+  struct thread* child;
+  struct list_elem* e;
+  for(e=list_begin(&(t->children)); e!=list_end(&(t->children)); e=list_next(e)){
+    child=list_entry(e, struct thread, child_elem);
+    printf("Child PID: %d, Desired PID: %d\n", child->pid,pid);
+    if(child->pid==pid){
+      return child;
+    }
+  }
+  return NULL;
+} 
+struct thread* getThreadByTID(tid_t tid){
+  struct thread* t;
+  struct list_elem* e;
+  for(e=list_begin(&all_list); e!=list_end(&all_list); e=list_next(e)){
+    t=list_entry(e, struct thread, allelem);
+    if(t->tid==tid){
+      return t;
+    }
+  }
+  return NULL;
+}
