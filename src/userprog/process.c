@@ -18,6 +18,9 @@
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 #include "threads/malloc.h"
+#include "threads/synch.h"
+
+
 
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
@@ -31,7 +34,7 @@ process_execute (const char *file_name)
 {
   char *fn_copy;
   tid_t tid;
-  struct thread* t=thread_current();
+  struct thread* t = thread_current();
 
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
@@ -41,15 +44,14 @@ process_execute (const char *file_name)
   strlcpy (fn_copy, file_name, PGSIZE);
 
   /* Create a new thread to execute FILE_NAME. */
-  //tid = thread_create (file_name, PRI_DEFAULT, start_process, t, fn_copy);  uhh i think this should wrk but idk lol
   tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
-  //SEMA DOWN
+
   //SEMA UP AT THE END AFTER IT HAS LOADED
-  sema_down(t->exec_sema);
+  sema_down((t->exec_sema));
   ASSERT(getThreadByTID(tid)!=NULL);
 
-  list_push_front(&(t->children),&(getThreadByTID(tid)->child_elem));
-  printf("Add child\n");
+  list_push_front(&(t->children), &(getThreadByTID(tid)->child_elem));
+  printf("Add child [in process_execute]\n");
 
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy);
@@ -72,10 +74,13 @@ start_process (void *file_name_)
   if_.eflags = FLAG_IF | FLAG_MBS;
   success = load (file_name, &if_.eip, &if_.esp);
 
+
   /* If load failed, quit. */
   palloc_free_page (file_name);
-  if (!success)
+
+  if (!success){
     thread_exit ();
+  }
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
@@ -85,6 +90,9 @@ start_process (void *file_name_)
      and jump to it. */
   asm volatile ("movl %0, %%esp; jmp intr_exit" : : "g" (&if_) : "memory");
   NOT_REACHED ();
+
+  //unblock after a successul creationa nd load of the child
+  sema_up((thread_current()->exec_sema));
 }
 
 /* Waits for thread TID to die and returns its exit status.  If
@@ -109,10 +117,10 @@ process_wait (tid_t child_tid UNUSED)
     return -1; //thread died improperly
   }
   printf("Thread didnt die weird\n");
-  sema_down(&(child->child_exit_sema)); //Waits on child to call exit
+  sema_down((child->child_exit_sema)); //Waits on child to call exit
   printf("Set exit status\n");
   status=child->exit_status;
-  sema_up(&(child-> parent_wait_sema)); //Tells child it has collected exit status
+  sema_up((child-> parent_wait_sema)); //Tells child it has collected exit status
   list_remove(&(child->child_elem));
   printf("Remove dead child\n");
   return status;

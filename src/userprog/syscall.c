@@ -5,6 +5,8 @@
 #include "userprog/process.h"
 #include "threads/vaddr.h"
 #include "devices/input.h"
+#include "userprog/pagedir.h"
+
 static void syscall_handler (struct intr_frame *);
 
 
@@ -75,6 +77,7 @@ void halt(void){
 }
 
 void exit(int status){
+  struct thread *t = thread_current();
   t->exit_status = status;
   t->called_exit = true; //this thread exited properly
   thread_exit();
@@ -138,13 +141,14 @@ int read(int fd, const void *buffer, unsigned size){
       *(uint8_t *) buffer = input_getc();
       buffer++;
     }
+
     bytes_read = i;
 
-  } else if(t->files[fd - 2] == NULL) {
+  } else if(t->files[fd] == NULL) {
     return -1; //file cannot be read, because it doesn't exist
 
   } else { //file exists
-    bytes_read = file_read(t->files[fd - 2], buffer, size);
+    bytes_read = file_read(t->files[fd], buffer, size);
   }
 
   lock_release(&filesys_lock);
@@ -161,32 +165,32 @@ bool remove(const char* file){
 }
 
 
-int write(int fd, const void *buffer, unsigned size){
+int write(int fd, const void *buffer, unsigned size)
+{
 
   int written = 0;
-  printf("Yolo\n\n\n");
-  printf("%s", buffer);
   lock_acquire(&filesys_lock);
   struct thread* t = thread_current();
+
+  printf("Yolo\n\n\n"); //debug
+
   if(fd <= 0){
+
     exit(-1);
-  }
-  else if(fd == 1)
-  {
-    printf("%s\n",buffer);
-    putbuf(buffer, size);
-    //lock release
+
+  } else if(fd == 1){
+
+    putbuf(buffer, size); //user input
+    lock_release(&filesys_lock);
     return size;
 
-  } else if(t->files[fd] != NULL) //ont subtract
+  } else {
 
-  //lock release
-    written = file_write(t->files[fd], buffer,size);
+    written = file_write(t->files[fd], buffer,size); //changed from fd-2 to fd
+    lock_release(&filesys_lock);
+    return written;
 
   }
-
-  lock_release(&filesys_lock);
-  return written;
 }
 
 void close(int fd){
@@ -194,14 +198,15 @@ void close(int fd){
 
   if(fd < 2){
     printf("invald file descriptor");
+    return; //find out what to do later
   }
 
   lock_acquire(&filesys_lock);
 
-  if(t->files[fd-2] != NULL){ //if the file exists
+  if(t->files[fd] != NULL){ //if the file exists
 
-    file_close (t->files[fd -2]); //close file
-    t->files[fd-2] = NULL; //free up spot
+    file_close (t->files[fd]); //close file
+    t->files[fd] = NULL; //free up spot
 
   }
 
