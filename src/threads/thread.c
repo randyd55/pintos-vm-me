@@ -338,9 +338,9 @@ thread_exit (void)
   t->called_thread_exit = true;
   intr_enable();
 
-  sema_up(t->child_exit_sema);
+  sema_up(&(t->child_exit_sema));
   //block so wait can finish, unblock at the end of wait
-  sema_down(t->parent_wait_sema);
+  sema_down(&(t->parent_wait_sema));
 
 
 #ifdef USERPROG
@@ -693,7 +693,7 @@ struct thread* getChildByPID(pid_t pid){
   struct list_elem* e;
   for(e=list_begin(&(t->children)); e!=list_end(&(t->children)); e=list_next(e)){
     child=list_entry(e, struct thread, child_elem);
-    printf("Child PID: %d, Desired PID: %d\n", child->pid,pid);
+    //printf("Child PID: %d, Desired PID: %d\n", child->pid,pid);
     if(child->pid==pid){
       return child;
     }

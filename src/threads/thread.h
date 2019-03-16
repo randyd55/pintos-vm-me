@@ -5,6 +5,7 @@
 #include <list.h>
 #include <stdint.h>
 #include "filesys/file.h"
+#include "synch.h"
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -103,9 +104,9 @@ struct thread
     struct thread* parent; //parent assigned before thread create
     bool called_exit, called_thread_exit;
 
-    struct semaphore* child_exit_sema;
-    struct semaphore* parent_wait_sema;
-    struct semaphore* exec_sema;
+    struct semaphore child_exit_sema;
+    struct semaphore parent_wait_sema;
+    struct semaphore exec_sema;
 
     struct list_elem child_elem;
     struct list children;

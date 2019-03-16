@@ -34,6 +34,9 @@ process_execute (const char *file_name)
 {
   char *fn_copy;
   tid_t tid;
+  char * save_ptr;
+  char * fn;
+  char *fn_temp = malloc(strlen(file_name));
   struct thread* t = thread_current();
 
   /* Make a copy of FILE_NAME.
@@ -42,16 +45,19 @@ process_execute (const char *file_name)
   if (fn_copy == NULL)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
+  strlcpy(fn_temp, file_name, strlen(file_name) + 1);
+  
+  fn = strtok_r(fn_temp, " ", &save_ptr);
 
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+  tid = thread_create (fn, PRI_DEFAULT, start_process, fn_copy);
 
   //SEMA UP AT THE END AFTER IT HAS LOADED
-  sema_down((t->exec_sema));
+  //sema_down((t->exec_sema));
   ASSERT(getThreadByTID(tid)!=NULL);
 
   list_push_front(&(t->children), &(getThreadByTID(tid)->child_elem));
-  printf("Add child [in process_execute]\n");
+  //printf("Add child [in process_execute]\n");
 
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy);
@@ -92,7 +98,7 @@ start_process (void *file_name_)
   NOT_REACHED ();
 
   //unblock after a successul creationa nd load of the child
-  sema_up((thread_current()->exec_sema));
+  sema_up(&(thread_current()->exec_sema));
 }
 
 /* Waits for thread TID to die and returns its exit status.  If
@@ -109,20 +115,20 @@ process_wait (tid_t child_tid UNUSED)
 {
   struct thread* child;
   int status;
-  printf("Children: %d\n", list_size(&(thread_current()->children)));
+  //printf("Children: %d\n", list_size(&(thread_current()->children)));
   child=getChildByPID(child_tid);
   if(child==NULL)
-    printf("Thread died?");
+    //printf("Thread died?");
   if(child==NULL||(!child->called_exit & child->called_thread_exit)){
     return -1; //thread died improperly
   }
-  printf("Thread didnt die weird\n");
-  sema_down((child->child_exit_sema)); //Waits on child to call exit
-  printf("Set exit status\n");
+  //printf("Thread didnt die weird\n");
+  sema_down(&(child->child_exit_sema)); //Waits on child to call exit
+  //printf("Set exit status\n");
   status=child->exit_status;
-  sema_up((child-> parent_wait_sema)); //Tells child it has collected exit status
+  sema_up(&(child-> parent_wait_sema)); //Tells child it has collected exit status
   list_remove(&(child->child_elem));
-  printf("Remove dead child\n");
+  //printf("Remove dead child\n");
   return status;
 
 
@@ -599,6 +605,7 @@ setup_stack (void **esp, const char *file_name)
               }
 
   //hex_dump(*esp, *esp, PHYS_BASE - *esp,  1);
+  //printf("stack setup yolo\n");
   return success;
 }
 

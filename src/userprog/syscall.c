@@ -24,29 +24,50 @@ static void
 syscall_handler (struct intr_frame *f UNUSED)
 {
 
-  printf("YOU SHOULD BE IN SYSCALL HANDLER \n\n\n\n\n");
+  //printf("YOU SHOULD BE IN SYSCALL HANDLER \n\n\n\n\n");
   if(!check_pointer(f->esp))
-    return;
+    exit(-1);
+	//printf("esp: %x\n",f->esp);
+  //hex_dump((f->esp), (f->esp), PHYS_BASE - (f->esp),  1);
   switch(*((uint32_t *) (f->esp))){
     case SYS_EXEC :
-        if (check_pointer(f->esp + 4))
-          f->eax=exec(((char *) (f->esp + 4)));
+        if (check_pointer(*(int*)(f->esp + 4))){
+          f->eax=exec(((char *) *(int*)(f->esp + 4)));
+        }
+        else
+      		exit(-1);
         break;
     case SYS_WRITE :
-        if (check_pointer(f->esp + 4) && check_pointer(f->esp + 8) && check_pointer(f->esp + 12))
-          f->eax=write(*((uint32_t *) (f->esp + 4) ),((void*) (f->esp + 8) ),*((unsigned *) (f->esp + 12) ));
+        if (check_pointer(f->esp +4) && check_pointer(*(int*)(f->esp + 8)) && check_pointer(f->esp + 12)){
+          f->eax=write(*((uint32_t *) (f->esp + 4) ),((void*)*(int*)(f->esp + 8) ),*((unsigned *) (f->esp + 12) ));
+        }
+        else
+      		exit(-1);
         break;
     case SYS_READ :
-       if (check_pointer(f->esp + 4) && check_pointer(f->esp + 8) && check_pointer(f->esp + 12))
-          f->eax=read(*((uint32_t *) (f->esp + 4) ),((void*) (f->esp + 8) ),*((unsigned *) (f->esp + 12) ));
-        break;
+       if (check_pointer(f->esp + 4) && check_pointer(*(int*)(f->esp + 8)) && check_pointer(f->esp + 12))
+          f->eax=read(*((uint32_t *) (f->esp + 4) ),((void*)*(int*)(f->esp + 8) ),*((unsigned *) (f->esp + 12) ));
+      else
+      	exit(-1);
+      break;
     case SYS_OPEN :
-        if (check_pointer(f->esp + 4))
-          f->eax=open(((char *) (f->esp + 4) ));
+        if (check_pointer(*(int*)(f->esp + 4)))
+          f->eax=open(((char *) *(int*)(f->esp + 4) ));
+      	else
+      		exit(-1);
         break;
     case SYS_CLOSE :
         if (check_pointer(f->esp + 4))
           close(*((uint32_t *) (f->esp + 4) ));
+        else
+      		exit(-1);
+        break;
+    case SYS_CREATE :
+		if (check_pointer(*(int*)(f->esp +4))){
+          f->eax=create((char*)*(int*) (f->esp + 4),(*(int*)(f->esp + 8)));
+        }
+        else
+      		exit(-1);
         break;
     case SYS_HALT :
         halt();
@@ -54,6 +75,8 @@ syscall_handler (struct intr_frame *f UNUSED)
     case SYS_EXIT :
         if (check_pointer(f->esp + 4))
           exit(*((uint32_t *) (f->esp + 4) ));
+      	else
+      		exit(-1);
         break;
 
         //f->eax = use this for any methods that have a return value
@@ -61,12 +84,15 @@ syscall_handler (struct intr_frame *f UNUSED)
 
   }
 
-  printf ("system call!\n");
+  //printf ("system call!\n");
 }
 
 bool check_pointer(uint32_t * stack_ptr){
-  if (stack_ptr == NULL || is_kernel_vaddr(stack_ptr) || !is_user_vaddr(stack_ptr) || pagedir_get_page(thread_current() -> pagedir, stack_ptr) == NULL)
+  if (stack_ptr == NULL || is_kernel_vaddr(stack_ptr) || !is_user_vaddr(stack_ptr) || pagedir_get_page(thread_current() -> pagedir, stack_ptr) == NULL){
+    //printf("false\n\n");
     return false;
+}
+	//printf("true\n\n");
   return true;
 
 }
@@ -80,6 +106,7 @@ void exit(int status){
   struct thread *t = thread_current();
   t->exit_status = status;
   t->called_exit = true; //this thread exited properly
+  printf("%s: exit(%d)\n",t->name,t->exit_status);
   thread_exit();
 }
 
@@ -93,6 +120,7 @@ int wait(pid_t pid){
 }
 
 pid_t exec(const char *cmd_line){
+  
   return process_execute(cmd_line);
 
 }
@@ -105,7 +133,7 @@ int open(const char *file){
     thread_current()->fd++;
     open_spot = getFd();
     if(open_spot != -1){
-
+      open_spot+=2;
       f_open = filesys_open(file); //this is just wrong i think?
       thread_current()->files[open_spot] = f_open; //fix her
     }
@@ -115,7 +143,7 @@ int open(const char *file){
     if(f_open == NULL){
       return -1;
     } else {
-      return open_spot+2;
+      return open_spot;
     }
 }
 
@@ -167,12 +195,11 @@ bool remove(const char* file){
 
 int write(int fd, const void *buffer, unsigned size)
 {
-
+  //char* str=buffer;
+  //printf("str: %s\n\n",*str);
   int written = 0;
   lock_acquire(&filesys_lock);
   struct thread* t = thread_current();
-
-  printf("Yolo\n\n\n"); //debug
 
   if(fd <= 0){
 
@@ -180,13 +207,13 @@ int write(int fd, const void *buffer, unsigned size)
 
   } else if(fd == 1){
 
-    putbuf(buffer, size); //user input
+    putbuf((char*)buffer, size ); //user input
     lock_release(&filesys_lock);
     return size;
 
   } else {
 
-    written = file_write(t->files[fd], buffer,size); //changed from fd-2 to fd
+    written = file_write(t->files[fd],buffer,size); //changed from fd-2 to fd
     lock_release(&filesys_lock);
     return written;
 
@@ -196,9 +223,8 @@ int write(int fd, const void *buffer, unsigned size)
 void close(int fd){
   struct thread* t = thread_current();
 
-  if(fd < 2){
-    printf("invald file descriptor");
-    return; //find out what to do later
+  if(fd < 2 || fd>128){
+    exit(-1); 
   }
 
   lock_acquire(&filesys_lock);
