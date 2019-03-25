@@ -98,7 +98,7 @@ struct thread
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
     int exit_status; /*exit status of the thread*/
-    struct file *files[128]; /*array of file pointers*/
+    struct file *files[130]; /*array of file pointers*/
     int fd; /*number of current files*/
     pid_t pid; /* Process ID*/
     struct thread* parent; //parent assigned before thread create

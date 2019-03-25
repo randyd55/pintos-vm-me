@@ -133,7 +133,6 @@ int open(const char *file){
     thread_current()->fd++;
     open_spot = getFd();
     if(open_spot != -1){
-      open_spot+=2;
       f_open = filesys_open(file); //this is just wrong i think?
       thread_current()->files[open_spot] = f_open; //fix her
     }
@@ -150,7 +149,7 @@ int open(const char *file){
 /*helper method*/
 int getFd(){
   int i;
-  for(i = 0; i < 128; i++){
+  for(i = 2; i < 130; i++){
     if(thread_current()->files[i] == NULL)
       return i;
   }
