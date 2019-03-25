@@ -25,7 +25,7 @@ bool remove(const char *file);
 
 int open(const char *file);
 
-// int filesize(int fd);
+int filesize(int fd);
 
 int read(int fd, const void *buffer, unsigned size);
 

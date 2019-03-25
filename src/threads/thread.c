@@ -201,10 +201,12 @@ thread_create (const char *name, int priority,
   sf = alloc_frame (t, sizeof *sf);
   sf->eip = switch_entry;
   sf->ebp = 0;
-
+  t->parent = thread_current();
+  
   /* Add to run queue. */
+  
   thread_unblock (t);
-
+  
   return tid;
 }
 

@@ -32,6 +32,7 @@ static bool load (const char *cmdline, void (**eip) (void), void **esp);
 tid_t
 process_execute (const char *file_name)
 {
+  printf("Process Execute \n\n");
   char *fn_copy;
   tid_t tid;
   char * save_ptr;
@@ -50,11 +51,13 @@ process_execute (const char *file_name)
   fn = strtok_r(fn_temp, " ", &save_ptr);
 
   /* Create a new thread to execute FILE_NAME. */
+
   tid = thread_create (fn, PRI_DEFAULT, start_process, fn_copy);
 
   //SEMA UP AT THE END AFTER IT HAS LOADED
-  //sema_down((t->exec_sema));
+  
   ASSERT(getThreadByTID(tid)!=NULL);
+  //sema_down(&(t->exec_sema));
 
   list_push_front(&(t->children), &(getThreadByTID(tid)->child_elem));
   //printf("Add child [in process_execute]\n");
@@ -69,6 +72,7 @@ process_execute (const char *file_name)
 static void
 start_process (void *file_name_)
 {
+  printf("start_process\n\n\n");
   char *file_name = file_name_;
   struct intr_frame if_;
   bool success;
@@ -87,6 +91,10 @@ start_process (void *file_name_)
   if (!success){
     thread_exit ();
   }
+  else{
+    printf("inside else\n\n");
+    sema_up(&(thread_current()->exec_sema));
+  }
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
@@ -98,7 +106,7 @@ start_process (void *file_name_)
   NOT_REACHED ();
 
   //unblock after a successul creationa nd load of the child
-  sema_up(&(thread_current()->exec_sema));
+  
 }
 
 /* Waits for thread TID to die and returns its exit status.  If

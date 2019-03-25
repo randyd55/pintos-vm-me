@@ -69,6 +69,9 @@ syscall_handler (struct intr_frame *f UNUSED)
         else
       		exit(-1);
         break;
+    case SYS_FILESIZE:
+        f->eax= filesize(*(int*)(f->esp +4));
+        break;
     case SYS_HALT :
         halt();
         break;
@@ -112,16 +115,16 @@ void exit(int status){
 
 
 int wait(pid_t pid){
-
+  //printf("hi\n\n");
   //struct thread *t = thread_current();
-
-
   return process_wait(pid);
 }
 
 pid_t exec(const char *cmd_line){
-  
-  return process_execute(cmd_line);
+  //printf("exec\n\n");
+  int e = process_execute(cmd_line);
+  sema_down(&(thread_current()->exec_sema));
+  return e;
 
 }
 
@@ -162,8 +165,6 @@ int read(int fd, const void *buffer, unsigned size){
   struct thread* t = thread_current();
 
   if(fd == 0){
-
-
     for(; i < size; i++){
       *(uint8_t *) buffer = input_getc();
       buffer++;
@@ -171,8 +172,12 @@ int read(int fd, const void *buffer, unsigned size){
 
     bytes_read = i;
 
-  } else if(t->files[fd] == NULL) {
-    return -1; //file cannot be read, because it doesn't exist
+  }
+  else if(fd < 0 || fd > 130){
+     bytes_read = -1;
+  } 
+  else if(t->files[fd] == NULL) {
+    bytes_read = -1; //file cannot be read, because it doesn't exist
 
   } else { //file exists
     bytes_read = file_read(t->files[fd], buffer, size);
@@ -182,6 +187,10 @@ int read(int fd, const void *buffer, unsigned size){
   return bytes_read;
 }
 
+int filesize(int fd){
+  return 239;
+  //return file_length(thread_current()->files[fd]);
+}
 
 bool create(const char* file, unsigned initial_size){
   return filesys_create(file, initial_size);
@@ -200,23 +209,20 @@ int write(int fd, const void *buffer, unsigned size)
   lock_acquire(&filesys_lock);
   struct thread* t = thread_current();
 
-  if(fd <= 0){
-
+  if(fd <= 0 || fd > 130){
+    lock_release(&filesys_lock);
     exit(-1);
-
-  } else if(fd == 1){
-
+  } 
+  else if(fd == 1){
     putbuf((char*)buffer, size ); //user input
-    lock_release(&filesys_lock);
-    return size;
-
-  } else {
-
-    written = file_write(t->files[fd],buffer,size); //changed from fd-2 to fd
-    lock_release(&filesys_lock);
-    return written;
-
+    written = size;
   }
+  
+  else {
+    written = file_write(t->files[fd],buffer,size); //changed from fd-2 to fd
+  }
+  lock_release(&filesys_lock);
+  return written;
 }
 
 void close(int fd){
