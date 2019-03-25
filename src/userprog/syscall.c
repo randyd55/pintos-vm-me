@@ -81,6 +81,9 @@ syscall_handler (struct intr_frame *f UNUSED)
       	else
       		exit(-1);
         break;
+    case SYS_WAIT :
+       f->eax= wait(*(int*)(f->esp +4));
+       break;
 
         //f->eax = use this for any methods that have a return value
         //add write case and all other cases
@@ -115,7 +118,6 @@ void exit(int status){
 
 
 int wait(pid_t pid){
-  //printf("hi\n\n");
   //struct thread *t = thread_current();
   return process_wait(pid);
 }

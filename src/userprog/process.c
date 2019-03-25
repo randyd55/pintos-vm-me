@@ -32,7 +32,7 @@ static bool load (const char *cmdline, void (**eip) (void), void **esp);
 tid_t
 process_execute (const char *file_name)
 {
-  printf("Process Execute \n\n");
+  //printf("Process Execute \n\n");
   char *fn_copy;
   tid_t tid;
   char * save_ptr;
@@ -72,7 +72,6 @@ process_execute (const char *file_name)
 static void
 start_process (void *file_name_)
 {
-  printf("start_process\n\n\n");
   char *file_name = file_name_;
   struct intr_frame if_;
   bool success;
@@ -88,12 +87,12 @@ start_process (void *file_name_)
   /* If load failed, quit. */
   palloc_free_page (file_name);
 
-  if (!success){
-    thread_exit ();
+  if (success){
+    sema_up(&(thread_current()->exec_sema));
+    
   }
   else{
-    printf("inside else\n\n");
-    sema_up(&(thread_current()->exec_sema));
+    thread_exit ();
   }
 
   /* Start the user process by simulating a return from an
