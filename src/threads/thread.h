@@ -98,6 +98,8 @@ struct thread
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
     int exit_status; /*exit status of the thread*/
+    /* boolean to indicate if the child thread was successfully loaded*/
+    bool load_status;
     struct file *files[130]; /*array of file pointers*/
     int fd; /*number of current files*/
     pid_t pid; /* Process ID*/

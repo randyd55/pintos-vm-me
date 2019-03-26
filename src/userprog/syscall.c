@@ -125,8 +125,10 @@ int wait(pid_t pid){
 pid_t exec(const char *cmd_line){
   //printf("exec\n\n");
   int e = process_execute(cmd_line);
-  sema_down(&(thread_current()->exec_sema));
-  return e;
+//sema_down(&(thread_current()->exec_sema));
+//kid is already made so what is the point
+
+  return e; //-1 if load failed, else successful load of child
 
 }
 
@@ -177,7 +179,7 @@ int read(int fd, const void *buffer, unsigned size){
   }
   else if(fd < 0 || fd > 130){
      bytes_read = -1;
-  } 
+  }
   else if(t->files[fd] == NULL) {
     bytes_read = -1; //file cannot be read, because it doesn't exist
 
@@ -214,12 +216,12 @@ int write(int fd, const void *buffer, unsigned size)
   if(fd <= 0 || fd > 130){
     lock_release(&filesys_lock);
     exit(-1);
-  } 
+  }
   else if(fd == 1){
     putbuf((char*)buffer, size ); //user input
     written = size;
   }
-  
+
   else {
     written = file_write(t->files[fd],buffer,size); //changed from fd-2 to fd
   }
@@ -231,7 +233,7 @@ void close(int fd){
   struct thread* t = thread_current();
 
   if(fd < 2 || fd>128){
-    exit(-1); 
+    exit(-1);
   }
 
   lock_acquire(&filesys_lock);

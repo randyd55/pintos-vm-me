@@ -47,20 +47,28 @@ process_execute (const char *file_name)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
   strlcpy(fn_temp, file_name, strlen(file_name) + 1);
-  
+
   fn = strtok_r(fn_temp, " ", &save_ptr);
 
+  printf("\n\n\n\n\n\n BEFORE THREAD CREATE");
+
   /* Create a new thread to execute FILE_NAME. */
-
   tid = thread_create (fn, PRI_DEFAULT, start_process, fn_copy);
-
+  printf("\n\n\n\n\n\n PST THREAD CREATE");
   //SEMA UP AT THE END AFTER IT HAS LOADED
-  
+
   ASSERT(getThreadByTID(tid)!=NULL);
-  //sema_down(&(t->exec_sema));
+  printf("AFTER THREAD CREATE \n\n\n\n");
+  sema_down(&(t->exec_sema));
+  printf("\n\n\n\n\n POST SEMA DOWN IN PROCESS_EXEC");
+
+  if(t->load_status == false){
+    printf("FAILED THREAD CREATE \n\n\n\n");
+
+    return -1; //failed load
+  }
 
   list_push_front(&(t->children), &(getThreadByTID(tid)->child_elem));
-  //printf("Add child [in process_execute]\n");
 
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy);
@@ -86,12 +94,16 @@ start_process (void *file_name_)
 
   /* If load failed, quit. */
   palloc_free_page (file_name);
+  printf("\n\n\n\n\n CHECk SUCCESS");
+  //we need to sema up on both situations, otherwise we will be blocked forever
+  struct thread *parent_thread = thread_current();
 
   if (success){
-    sema_up(&(thread_current()->exec_sema));
-    
-  }
-  else{
+    thread_current()->load_status = true;
+    sema_up(&(parent_thread->exec_sema));
+  } else {
+    thread_current()->load_status = false;
+    sema_up(&(parent_thread->exec_sema));
     thread_exit ();
   }
 
@@ -103,9 +115,6 @@ start_process (void *file_name_)
      and jump to it. */
   asm volatile ("movl %0, %%esp; jmp intr_exit" : : "g" (&if_) : "memory");
   NOT_REACHED ();
-
-  //unblock after a successul creationa nd load of the child
-  
 }
 
 /* Waits for thread TID to die and returns its exit status.  If

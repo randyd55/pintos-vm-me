@@ -202,58 +202,13 @@ thread_create (const char *name, int priority,
   sf->eip = switch_entry;
   sf->ebp = 0;
   t->parent = thread_current();
-  
+
   /* Add to run queue. */
-  
+
   thread_unblock (t);
-  
+
   return tid;
 }
-
-// NOT SURE ABOUT THIS BUT I THINK IT WORKS: added a parent parameter to keep track of the parent of a thread. Not sure how else to do it upon initialization
-// might be ok bc thread_create isn't really called anywhere else except in process/project 1 tests.
-// tid_t
-// thread_create (const char *name, int priority,
-//                thread_func *function, struct thread *parent,void *aux)
-// {
-//   struct thread *t;
-//   struct kernel_thread_frame *kf;
-//   struct switch_entry_frame *ef;
-//   struct switch_threads_frame *sf;
-//   tid_t tid;
-
-//   ASSERT (function != NULL);
-
-//   /* Allocate thread. */
-//   t = palloc_get_page (PAL_ZERO);
-//   if (t == NULL)
-//     return TID_ERROR;
-
-//   /* Initialize thread. */
-//   init_thread (t, name, priority, parent);
-//   tid = t->tid = allocate_tid ();
-//   t->pid=t->tid;
-
-//   /* Stack frame for kernel_thread(). */
-//   kf = alloc_frame (t, sizeof *kf);
-//   kf->eip = NULL;
-//   kf->function = function;
-//   kf->aux = aux;
-
-//   /* Stack frame for switch_entry(). */
-//   ef = alloc_frame (t, sizeof *ef);
-//   ef->eip = (void (*) (void)) kernel_thread;
-
-//   /* Stack frame for switch_threads(). */
-//   sf = alloc_frame (t, sizeof *sf);
-//   sf->eip = switch_entry;
-//   sf->ebp = 0;
-
-//   /* Add to run queue. */
-//   thread_unblock (t);
-//   sema_up(t->parent->exec_sema);
-//   return tid;
-// }
 
 
 /* Puts the current thread to sleep.  It will not be scheduled
