@@ -118,14 +118,11 @@ void exit(int status){
 
 
 int wait(pid_t pid){
-  //struct thread *t = thread_current();
   return process_wait(pid);
 }
 
 pid_t exec(const char *cmd_line){
-  //printf("exec\n\n");
   int e = process_execute(cmd_line);
-//sema_down(&(thread_current()->exec_sema));
 //kid is already made so what is the point
 
   return e; //-1 if load failed, else successful load of child
