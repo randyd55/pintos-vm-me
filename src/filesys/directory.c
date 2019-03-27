@@ -35,6 +35,8 @@ struct dir *
 dir_open (struct inode *inode) 
 {
   struct dir *dir = calloc (1, sizeof *dir);
+
+  //printf("CALLOC FAIL \n\n\n");
   if (inode != NULL && dir != NULL)
     {
       dir->inode = inode;

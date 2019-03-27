@@ -54,9 +54,11 @@ process_execute (const char *file_name)
 
   ASSERT(getThreadByTID(tid)!=NULL);
   sema_down(&(t->exec_sema));
+
   if(t->load_status == false){
     return -1; //failed load
   }
+
   list_push_front(&(t->children), &(getThreadByTID(tid)->child_elem));
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy);
@@ -82,6 +84,8 @@ start_process (void *file_name_)
 
   /* If load failed, quit. */
   palloc_free_page (file_name);
+
+  //NEED TO CHECK IF THE PARENT IS DEAD!!!1 RACE CONDITION
   //we need to sema up on both situations, otherwise we will be blocked forever
   struct thread *parent_thread = thread_current()->parent;
 
@@ -119,16 +123,18 @@ process_wait (tid_t child_tid UNUSED)
   struct thread* child;
   int status;
   //printf("Children: %d\n", list_size(&(thread_current()->children)));
-  child=getChildByPID(child_tid);
-  if(child==NULL)
-    //printf("Thread died?");
-  if(child==NULL||(!child->called_exit & child->called_thread_exit)){
-    return -1; //thread died improperly
+  child = getChildByPID(child_tid);
+  if(child == NULL){
+  //  printf("Thread died? \n\n\n\n");
+    return -1; //leave immediately
   }
+  //if(child==NULL||(!child->called_exit & child->called_thread_exit)){
+  //  return -1; //thread died improperly
+  //}
   //printf("Thread didnt die weird\n");
   sema_down(&(child->child_exit_sema)); //Waits on child to call exit
   //printf("Set exit status\n");
-  status=child->exit_status;
+  status = child->exit_status;
   sema_up(&(child-> parent_wait_sema)); //Tells child it has collected exit status
   list_remove(&(child->child_elem));
   //printf("Remove dead child\n");

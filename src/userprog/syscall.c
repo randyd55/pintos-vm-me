@@ -24,7 +24,8 @@ static void
 syscall_handler (struct intr_frame *f UNUSED)
 {
 
-  //printf("YOU SHOULD BE IN SYSCALL HANDLER \n\n\n\n\n");
+
+  printf("YOU SHOULD BE IN SYSCALL HANDLER \n\n\n\n\n");
   if(!check_pointer(f->esp))
     exit(-1);
 	//printf("esp: %x\n",f->esp);
@@ -111,7 +112,7 @@ void halt(void){
 void exit(int status){
   struct thread *t = thread_current();
   t->exit_status = status;
-  t->called_exit = true; //this thread exited properly
+  //t->called_exit = true; //this thread exited properly
   printf("%s: exit(%d)\n",t->name,t->exit_status);
   thread_exit();
 }
@@ -122,10 +123,9 @@ int wait(pid_t pid){
 }
 
 pid_t exec(const char *cmd_line){
-  int e = process_execute(cmd_line);
-//kid is already made so what is the point
 
-  return e; //-1 if load failed, else successful load of child
+  int e = process_execute(cmd_line);
+  return e;
 
 }
 

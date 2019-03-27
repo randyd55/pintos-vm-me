@@ -20,9 +20,6 @@
    of thread.h for details. */
 #define THREAD_MAGIC 0xcd6abf4b
 
-static int EXIT_ERR = 1;
-static int EXIT_SUCCESS = 0;
-
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
 static struct list ready_list;
@@ -290,10 +287,10 @@ thread_exit (void)
 {
   ASSERT (!intr_context ());
 
-  intr_disable (); //disable while working with gloab vars
+  //intr_disable (); //disable while working with gloab vars
   struct thread *t = thread_current();
-  t->called_thread_exit = true;
-  intr_enable();
+  //t->called_thread_exit = true; //no need
+//  intr_enable();
 
   sema_up(&(t->child_exit_sema));
   //block so wait can finish, unblock at the end of wait
