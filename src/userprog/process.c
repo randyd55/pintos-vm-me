@@ -71,7 +71,6 @@ start_process (void *file_name_)
   char *file_name = file_name_;
   struct intr_frame if_;
   bool success;
-
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
@@ -274,14 +273,14 @@ load (const char *file_name, void (**eip) (void), void **esp)
   char * fn;
 
   fn = strtok_r(fn_temp, " ", &save_ptr);
-
+  printf("name: %sTacoYolo\n\n",fn);
   file = filesys_open (fn);
   if (file == NULL)
     {
       printf ("load: %s: open failed\n", file_name);
       goto done;
     }
-
+  //file_deny_write(file);
   /* Read and verify executable header. */
   if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
       || memcmp (ehdr.e_ident, "\177ELF\1\1\1", 7)

@@ -72,6 +72,14 @@ syscall_handler (struct intr_frame *f UNUSED)
     case SYS_FILESIZE:
         f->eax= filesize(*(int*)(f->esp +4));
         break;
+    case SYS_SEEK:
+    //printf("SEEK\n\n\n");
+      if(check_pointer((f->esp+4)))
+        seek(*(int*)(f->esp+4),*(unsigned*)(f->esp+8));
+      break;
+    case SYS_TELL:
+        f->eax=tell(*(unsigned*)f->esp+4);
+        break;
     case SYS_HALT :
         halt();
         break;
@@ -87,7 +95,6 @@ syscall_handler (struct intr_frame *f UNUSED)
 
         //f->eax = use this for any methods that have a return value
         //add write case and all other cases
-
   }
 
   //printf ("system call!\n");
@@ -139,9 +146,11 @@ int open(const char *file){
     if(open_spot != -1){
       f_open = filesys_open(file); //this is just wrong i think?
       thread_current()->files[open_spot] = f_open; //fix her
+      //file_deny_write(f_open);
     }
    // const char* temp_file = thread_current()->files[fd];
    lock_release(&filesys_lock);
+
 
     if(f_open == NULL){
       return -1;
@@ -179,7 +188,6 @@ int read(int fd, const void *buffer, unsigned size){
   }
   else if(t->files[fd] == NULL) {
     bytes_read = -1; //file cannot be read, because it doesn't exist
-
   } else { //file exists
     bytes_read = file_read(t->files[fd], buffer, size);
   }
@@ -189,8 +197,8 @@ int read(int fd, const void *buffer, unsigned size){
 }
 
 int filesize(int fd){
-  return 239;
-  //return file_length(thread_current()->files[fd]);
+  //return 239;
+  return file_length(thread_current()->files[fd]);
 }
 
 bool create(const char* file, unsigned initial_size){
@@ -204,8 +212,12 @@ bool remove(const char* file){
 
 int write(int fd, const void *buffer, unsigned size)
 {
+  //printf("writing %x\n",buffer);
   //char* str=buffer;
   //printf("str: %s\n\n",*str);
+  if(buffer==NULL)
+    exit(-1);
+
   int written = 0;
   lock_acquire(&filesys_lock);
   struct thread* t = thread_current();
@@ -225,7 +237,14 @@ int write(int fd, const void *buffer, unsigned size)
   lock_release(&filesys_lock);
   return written;
 }
-
+void seek(int fd, unsigned position){
+  struct thread* t=thread_current();
+  file_seek(t->files[fd],position);
+}
+unsigned tell(int fd){
+  struct thread* t=thread_current();
+  file_tell(t->files[fd]);
+}
 void close(int fd){
   struct thread* t = thread_current();
 

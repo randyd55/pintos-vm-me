@@ -31,9 +31,9 @@ int read(int fd, const void *buffer, unsigned size);
 
 int write(int fd, const void *buffer, unsigned size);
 
-// void seek(int fd, unsigned position);
+void seek(int fd, unsigned position);
 
-// unsigned tell(int fd);
+unsigned tell(int fd);
 
 void close(int fd);
 
