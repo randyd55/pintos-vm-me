@@ -25,7 +25,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 {
 
 
-  printf("YOU SHOULD BE IN SYSCALL HANDLER \n\n\n\n\n");
+  //printf("YOU SHOULD BE IN SYSCALL HANDLER \n\n\n\n\n");
   if(!check_pointer(f->esp))
     exit(-1);
 	//printf("esp: %x\n",f->esp);
