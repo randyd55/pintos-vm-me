@@ -101,6 +101,7 @@ struct thread
     /* boolean to indicate if the child thread was successfully loaded*/
     bool load_status;
     struct file *files[130]; /*array of file pointers*/
+    struct file *executable;
     int fd; /*number of current files*/
     pid_t pid; /* Process ID*/
     struct thread* parent; //parent assigned before thread create

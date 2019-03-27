@@ -119,7 +119,6 @@ void halt(void){
 void exit(int status){
   struct thread *t = thread_current();
   t->exit_status = status;
-  //t->called_exit = true; //this thread exited properly
   printf("%s: exit(%d)\n",t->name,t->exit_status);
   file_close(t->executable);
   thread_exit();
