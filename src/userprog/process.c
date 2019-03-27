@@ -279,7 +279,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   char * fn;
 
   fn = strtok_r(fn_temp, " ", &save_ptr);
-  printf("name: %sTacoYolo\n\n",fn);
+  //printf("name: %sTacoYolo\n\n",fn);
   file = filesys_open (fn);
   if (file == NULL)
     {
