@@ -121,6 +121,7 @@ void exit(int status){
   t->exit_status = status;
   //t->called_exit = true; //this thread exited properly
   printf("%s: exit(%d)\n",t->name,t->exit_status);
+  file_close(t->executable);
   thread_exit();
 }
 
@@ -146,7 +147,6 @@ int open(const char *file){
     if(open_spot != -1){
       f_open = filesys_open(file); //this is just wrong i think?
       thread_current()->files[open_spot] = f_open; //fix her
-      //file_deny_write(f_open);
     }
    // const char* temp_file = thread_current()->files[fd];
    lock_release(&filesys_lock);

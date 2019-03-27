@@ -279,14 +279,14 @@ load (const char *file_name, void (**eip) (void), void **esp)
   char * fn;
 
   fn = strtok_r(fn_temp, " ", &save_ptr);
-  //printf("name: %sTacoYolo\n\n",fn);
   file = filesys_open (fn);
   if (file == NULL)
     {
       printf ("load: %s: open failed\n", file_name);
       goto done;
-    }
-  //file_deny_write(file);
+    }  
+  t->executable=file;
+  file_deny_write(file);
   /* Read and verify executable header. */
   if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
       || memcmp (ehdr.e_ident, "\177ELF\1\1\1", 7)
@@ -370,7 +370,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
  done:
   /* We arrive here whether the load is successful or not. */
-  file_close (file);
+  //file_close (file);
   return success;
 }
 
