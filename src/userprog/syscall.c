@@ -36,14 +36,22 @@ syscall_handler (struct intr_frame *f UNUSED)
       	exit(-1);
       break;
     case SYS_WRITE :
-      if (check_pointer(f->esp +4) && check_pointer(*(int*)(f->esp + 8)) && check_pointer(f->esp + 12))
-        f->eax=write(*((uint32_t *) (f->esp + 4) ),((void*)*(int*)(f->esp + 8) ),*((unsigned *) (f->esp + 12) ));
+      if (check_pointer(f->esp +4) 
+        && check_pointer(*(int*)(f->esp + 8)) 
+        && check_pointer(f->esp + 12))
+        f->eax=write(*((uint32_t *) (f->esp + 4) ),
+          ((void*)*(int*)(f->esp + 8) ),
+          *((unsigned *) (f->esp + 12) ));
       else
       	exit(-1);
       break;
     case SYS_READ :
-       if (check_pointer(f->esp + 4) && check_pointer(*(int*)(f->esp + 8)) && check_pointer(f->esp + 12))
-          f->eax=read(*((uint32_t *) (f->esp + 4) ),((void*)*(int*)(f->esp + 8) ),*((unsigned *) (f->esp + 12) ));
+       if (check_pointer(f->esp + 4) 
+        && check_pointer(*(int*)(f->esp + 8)) 
+        && check_pointer(f->esp + 12))
+          f->eax=read(*((uint32_t *) (f->esp + 4) ),
+            ((void*)*(int*)(f->esp + 8) ),
+            *((unsigned *) (f->esp + 12) ));
       else
       	exit(-1);
       break;
@@ -61,7 +69,7 @@ syscall_handler (struct intr_frame *f UNUSED)
       break;
     case SYS_CREATE :
 		  if (check_pointer(*(int*)(f->esp +4)))
-        f->eax=create((char*)*(int*) (f->esp + 4),(*(int*)(f->esp + 8))); 
+        f->eax=create((char*)*(int*) (f->esp + 4),(*(int*)(f->esp + 8)));
       else
       	exit(-1);
       break;
@@ -121,11 +129,7 @@ exit (int status)
   struct thread *t = thread_current();
   //Set exit status
   t->exit_status = status;
-<<<<<<< HEAD
   //Output exit statement
-=======
-
->>>>>>> 29cdafe92a068a324d6bebf8c12bfb7ca5ac60ac
   printf("%s: exit(%d)\n",t->name,t->exit_status);
   
   file_close(t->executable);
@@ -279,13 +283,14 @@ write (int fd, const void *buffer, unsigned size)
   //STDOUT write
   else if(fd == 1)
   {
-    putbuf((char*)buffer, size ); //user input
+    //User input
+    putbuf((char*)buffer, size ); 
     written = size;
   }
   //User file write
   else 
   {
-    written = file_write(t->files[fd],buffer,size); //changed from fd-2 to fd
+    written = file_write(t->files[fd],buffer,size); 
   }
   lock_release(&filesys_lock);
   return written;
