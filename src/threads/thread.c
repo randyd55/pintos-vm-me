@@ -282,29 +282,26 @@ thread_tid (void)
 
 /* Deschedules the current thread and destroys it.  Never
    returns to the caller. */
+//Chineye drove here
 void
 thread_exit (void)
 {
   ASSERT (!intr_context ());
 
-  //intr_disable (); //disable while working with gloab vars
   struct thread *t = thread_current();
   struct thread *c;
-  //t->called_thread_exit = true; //no need
-//  intr_enable();
   sema_up(&(t->child_exit_sema));
   //block so wait can finish, unblock at the end of wait
   sema_down(&(t->parent_wait_sema));
   struct list_elem* e;
+  //allows children to free their resources when it finishes by calling
+  //up on their parent_wait semaphore
   for(e=list_begin(&t->children); e!=list_end(&t->children); e=list_next(e)){
     c=list_entry(e, struct thread, child_elem);
     sema_up(&(c->parent_wait_sema));
   }
 
 #ifdef USERPROG
-  //thread_current
- // return thread
-  //palloc_free_page
   process_exit ();
 #endif
 
@@ -471,6 +468,7 @@ is_thread (struct thread *t)
 
 /* Does basic initialization of T as a blocked thread named
    NAME. */
+//Randy drove here
 static void
 init_thread (struct thread *t, const char *name, int priority)
 {
@@ -486,7 +484,6 @@ init_thread (struct thread *t, const char *name, int priority)
   t->magic = THREAD_MAGIC;
   t->exit_status = -1;
   t->fd = -1;
-  //t->pid=t->tid;
   //initialize semaphores for syscall synchronization
   sema_init(&(t->child_exit_sema), 0);
   sema_init(&(t->parent_wait_sema), 0);
@@ -499,37 +496,7 @@ init_thread (struct thread *t, const char *name, int priority)
   list_push_back (&all_list, &t->allelem);
   intr_set_level(old_level);
 }
-/*  NOT SURE ABOUT THIS BUT I THINK THIS WILL WORK
-static void
-init_thread (struct thread *t, const char *name, int priority, struct thread *parent)
-{
-  enum intr_level old_level;
-  ASSERT (t != NULL);
-  ASSERT (PRI_MIN <= priority && priority <= PRI_MAX);
-  ASSERT (name != NULL);
-  memset (t, 0, sizeof *t);
-  t->status = THREAD_BLOCKED;
-  strlcpy (t->name, name, sizeof t->name);
-  t->stack = (uint8_t *) t + PGSIZE;
-  t->priority = priority;
-  t->magic = THREAD_MAGIC;
-  t->exit_status = -1;
-  t->fd = -1;
-  //t->pid=t->tid;
-  //initialize semaphores for syscall synchronization
-  sema_init(&(t->child_exit_sema), 0);
-  sema_init(&(t->parent_wait_sema), 0);
-  sema_init(&(t->exec_sema), 0);
-  list_init(&(t->children));
-  if(parent != NULL)
-    t->parent = parent;
 
-
-  old_level = intr_disable();
-  list_push_back (&all_list, &t->allelem);
-  intr_set_level(old_level);
-}
-*/
 
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
@@ -641,24 +608,30 @@ allocate_tid (void)
 
   return tid;
 }
-
+
+
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
 
+//Anthony Driving
+//return child thread given a PID
 struct thread* getChildByPID(pid_t pid){
   struct thread* t=thread_current();
   struct thread* child;
   struct list_elem* e;
-  for(e=list_begin(&(t->children)); e!=list_end(&(t->children)); e=list_next(e)){
+  for(e=list_begin(&(t->children)); e!=list_end(&(t->children)); 
+                                    e=list_next(e)){
     child=list_entry(e, struct thread, child_elem);
-    //printf("Child PID: %d, Desired PID: %d\n", child->pid,pid);
     if(child->pid==pid){
       return child;
     }
   }
   return NULL;
 }
+
+//Anthony Driving
+//return a thread given a TID
 struct thread* getThreadByTID(tid_t tid){
   struct thread* t;
   struct list_elem* e;

@@ -85,6 +85,7 @@ typedef int pid_t;
    only because they are mutually exclusive: only a thread in the
    ready state is on the run queue, whereas only a thread in the
    blocked state is on a semaphore wait list. */
+// Anthony, Chineye, Randy, and Tim drove here
 struct thread
   {
     /* Owned by thread.c. */
@@ -93,7 +94,7 @@ struct thread
     char name[16];                      /* Name (for debugging purposes). */
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
-    struct list_elem allelem;           /* List element for all threads list. */
+    struct list_elem allelem;           /* List element for all threads list.*/
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
@@ -105,14 +106,12 @@ struct thread
     int fd; /*number of current files*/
     pid_t pid; /* Process ID*/
     struct thread* parent; //parent assigned before thread create
-    bool called_exit, called_thread_exit;
+    struct semaphore child_exit_sema; //sema waiting on child to call exit
+    struct semaphore parent_wait_sema; //sema waiting on parent to call wait 
+    struct semaphore exec_sema; //sema for loading properly
 
-    struct semaphore child_exit_sema;
-    struct semaphore parent_wait_sema;
-    struct semaphore exec_sema;
-
-    struct list_elem child_elem;
-    struct list children;
+    struct list_elem child_elem; //elem for children list
+    struct list children; // list of children the thread has
 
 
 
