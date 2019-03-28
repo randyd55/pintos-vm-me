@@ -6,6 +6,7 @@
 #include "threads/synch.h"
 #include "devices/shutdown.h"
 
+struct lock filesys_lock;
 
 int wait(pid_t pid);
 
@@ -16,8 +17,6 @@ void halt(void);
 void exit(int status);
 /*runs the executable whos name is given by cmd_line*/
 pid_t exec(const char *cmd_line);
-
-// int wait(pid_t pid);
 
 bool create(const char *file, unsigned intial_size);
 

@@ -11,7 +11,7 @@ static void syscall_handler (struct intr_frame *);
 
 
 int fd_count = 1;
-struct lock filesys_lock;
+//struct lock filesys_lock;
 
 void
 syscall_init (void)
@@ -28,8 +28,7 @@ syscall_handler (struct intr_frame *f UNUSED)
   //printf("YOU SHOULD BE IN SYSCALL HANDLER \n\n\n\n\n");
   if(!check_pointer(f->esp))
     exit(-1);
-	//printf("esp: %x\n",f->esp);
-  //hex_dump((f->esp), (f->esp), PHYS_BASE - (f->esp),  1);
+
   switch(*((uint32_t *) (f->esp))){
     case SYS_EXEC :
         if (check_pointer(*(int*)(f->esp + 4))){
@@ -94,8 +93,6 @@ syscall_handler (struct intr_frame *f UNUSED)
        f->eax= wait(*(int*)(f->esp +4));
        break;
 
-        //f->eax = use this for any methods that have a return value
-        //add write case and all other cases
   }
 
   //printf ("system call!\n");
@@ -103,10 +100,9 @@ syscall_handler (struct intr_frame *f UNUSED)
 
 bool check_pointer(uint32_t * stack_ptr){
   if (stack_ptr == NULL || is_kernel_vaddr(stack_ptr) || !is_user_vaddr(stack_ptr) || pagedir_get_page(thread_current() -> pagedir, stack_ptr) == NULL){
-    //printf("false\n\n");
+
     return false;
 }
-	//printf("true\n\n");
   return true;
 
 }
@@ -147,7 +143,7 @@ int open(const char *file){
       f_open = filesys_open(file); //this is just wrong i think?
       thread_current()->files[open_spot] = f_open; //fix her
     }
-   // const char* temp_file = thread_current()->files[fd];
+
    lock_release(&filesys_lock);
 
 
@@ -196,7 +192,7 @@ int read(int fd, const void *buffer, unsigned size){
 }
 
 int filesize(int fd){
-  //return 239;
+
   return file_length(thread_current()->files[fd]);
 }
 
@@ -211,9 +207,7 @@ bool remove(const char* file){
 
 int write(int fd, const void *buffer, unsigned size)
 {
-  //printf("writing %x\n",buffer);
-  //char* str=buffer;
-  //printf("str: %s\n\n",*str);
+
   if(buffer==NULL)
     exit(-1);
 

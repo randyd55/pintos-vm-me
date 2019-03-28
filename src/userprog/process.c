@@ -1,4 +1,5 @@
 #include "userprog/process.h"
+#include "userprog/syscall.h"
 #include <debug.h>
 #include <inttypes.h>
 #include <round.h>
@@ -33,20 +34,27 @@ tid_t
 process_execute (const char *file_name)
 {
   //printf("Process Execute \n\n");
-  char *fn_copy;
+  char *fn_copy = NULL;
   tid_t tid;
-  char * save_ptr;
-  char * fn;
-  char *fn_temp = malloc(strlen(file_name));
+  char *save_ptr = NULL;
+  char *fn = NULL;
+  char *fn_temp = NULL;
   struct thread* t = thread_current();
 
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
-  fn_copy = palloc_get_page (0);
-  if (fn_copy == NULL)
+  fn_copy = palloc_get_page (PAL_ZERO);
+  if (fn_copy == NULL){
     return TID_ERROR;
+  }
   strlcpy (fn_copy, file_name, PGSIZE);
-  strlcpy(fn_temp, file_name, strlen(file_name) + 1);
+
+  fn_temp = palloc_get_page(PAL_ZERO);
+
+  if(fn_temp == NULL){
+    return TID_ERROR;
+  }
+  strlcpy(fn_temp, file_name, PGSIZE);
 
   fn = strtok_r(fn_temp, " ", &save_ptr);
   /* Create a new thread to execute FILE_NAME. */
@@ -60,8 +68,11 @@ process_execute (const char *file_name)
   }
 
   list_push_front(&(t->children), &(getThreadByTID(tid)->child_elem));
+
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy);
+
+  palloc_free_page(fn_temp);
   return tid;
 }
 
@@ -121,22 +132,15 @@ process_wait (tid_t child_tid UNUSED)
 {
   struct thread* child;
   int status;
-  //printf("Children: %d\n", list_size(&(thread_current()->children)));
   child = getChildByPID(child_tid);
   if(child == NULL){
-  //  printf("Thread died? \n\n\n\n");
     return -1; //leave immediately
   }
-  //if(child==NULL||(!child->called_exit & child->called_thread_exit)){
-  //  return -1; //thread died improperly
-  //}
-  //printf("Thread didnt die weird\n");
+
   sema_down(&(child->child_exit_sema)); //Waits on child to call exit
-  //printf("Set exit status\n");
   status = child->exit_status;
   sema_up(&(child-> parent_wait_sema)); //Tells child it has collected exit status
   list_remove(&(child->child_elem));
-  //printf("Remove dead child\n");
   return status;
 
 
@@ -259,6 +263,7 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
 bool
 load (const char *file_name, void (**eip) (void), void **esp)
 {
+  lock_acquire(&filesys_lock);
   struct thread *t = thread_current ();
   struct Elf32_Ehdr ehdr;
   struct file *file = NULL;
@@ -274,19 +279,24 @@ load (const char *file_name, void (**eip) (void), void **esp)
   process_activate ();
 
   /* Open executable file. */
-  char *fn_temp = malloc(strlen(file_name));
-  strlcpy(fn_temp, file_name, strlen(file_name) + 1);
-  char * save_ptr;
-  char * fn;
+  char *fn_temp;
+  fn_temp = NULL;
+  fn_temp = palloc_get_page(PAL_ZERO);
+  if(fn_temp == NULL)
+    return TID_ERROR;
+  strlcpy(fn_temp, file_name, PGSIZE);
 
-  fn = strtok_r(fn_temp, " ", &save_ptr);
+  char * save_ptr = NULL;
+  char * fn = strtok_r(fn_temp, " ", &save_ptr);
+
   file = filesys_open (fn);
   if (file == NULL)
     {
       printf ("load: %s: open failed\n", file_name);
       goto done;
-    }  
-  t->executable=file;
+    }
+
+  t->executable = file;
   file_deny_write(file);
   /* Read and verify executable header. */
   if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
@@ -371,7 +381,8 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
  done:
   /* We arrive here whether the load is successful or not. */
-  //file_close (file);
+  palloc_free_page(fn_temp);
+  lock_release(&filesys_lock);
   return success;
 }
 
