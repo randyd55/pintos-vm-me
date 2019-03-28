@@ -169,7 +169,7 @@ process_wait (tid_t child_tid UNUSED)
   sema_down(&(child->child_exit_sema)); /*waits on child to call exit*/
   status = child->exit_status;
   //Tells child it has collected exit status
-  sema_up(&(child-> parent_wait_sema)); /*wait on chil to enter wait()*/
+  sema_up(&(child-> parent_wait_sema)); 
   list_remove(&(child->child_elem));
 
   //Chineye Done
