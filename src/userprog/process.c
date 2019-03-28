@@ -283,7 +283,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   /* Open executable file. */
   char *fn_temp;
   fn_temp = NULL;
-  fn_temp = palloc_get_page(PAL_ZERO);
+  fn_temp = palloc_get_page(PAL_ZERO | PAL_USER);
   if(fn_temp == NULL)
     return TID_ERROR;
   strlcpy(fn_temp, file_name, PGSIZE);
@@ -469,7 +469,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
       /* Get a page of memory. */
-      uint8_t *kpage = palloc_get_page (PAL_USER);
+      uint8_t *kpage = palloc_get_page (PAL_USER | PAL_ZERO);
       if (kpage == NULL)
         return false;
 
@@ -508,143 +508,121 @@ setup_stack (void **esp, const char *file_name)
   char** argv;
   int argc, i;
   kpage = palloc_get_page (PAL_USER | PAL_ZERO);
-  if (kpage != NULL)
-    {
-      success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
-      if (success){
-        *esp = PHYS_BASE;
+  if (kpage != NULL){
+    success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
 
-            //make deep copy of filename
-            
-            temp_fn = palloc_get_page(PAL_ZERO);
-            if(temp_fn==NULL)
-              return TID_ERROR;
-            //char *temp_fn = malloc(strlen(file_name) * sizeof(char));
-            strlcpy(temp_fn, file_name, strlen(file_name) + 1); //deep copy
+    if (success){
+      *esp = PHYS_BASE;
 
-            argv = palloc_get_page(PAL_ZERO);
-            if(argv==NULL)
-              return TID_ERROR;
-            //char **argv = malloc(sizeof(char *) * strlen(temp_fn));
-            my_esp = (char *) *esp;
-            argc = 0;
+    //make deep copy of filename      
+    temp_fn = palloc_get_page(PAL_ZERO);
 
+    if(temp_fn==NULL)
+      return TID_ERROR;
+    strlcpy(temp_fn, file_name, strlen(file_name) + 1); //deep copy
+    argv = palloc_get_page(PAL_ZERO);
 
-            for (token = strtok_r (temp_fn, " ", &save_ptr); token != NULL;
-              token = strtok_r (NULL, " ", &save_ptr)){
+    if(argv==NULL)
+      return TID_ERROR;
+    my_esp = (char *) *esp;
+    argc = 0;
 
-                argv[argc]=token;
-                argc++;
-            }
+    for(token = strtok_r (temp_fn, " ", &save_ptr); token != NULL;
+      token = strtok_r (NULL, " ", &save_ptr)){
+      argv[argc]=token;
+      argc++;
+    }
 
-            i= argc-1;
-            //Copy argv onto memory and store pointers of my_esp into argv
-            for (; i >= 0; i--){
-              my_esp -= strlen(argv[i]) + 1;
+    i= argc-1;
+    //Copy argv onto memory and store pointers of my_esp into argv
+    for (; i >= 0; i--){
+      my_esp -= strlen(argv[i]) + 1;
+      /*check for overflow*/
+      if((int) my_esp < PHYS_BASE - 4096){
+        palloc_free_page (kpage);
+        palloc_free_page(temp_fn);
+        palloc_free_page(argv);
+        return false; //failed
+      }
+      memcpy(my_esp, argv[i], strlen(argv[i]) + 1);
+      argv[i] = my_esp;
+    }
 
-              /*check for overflow*/
-              if((int) my_esp < PHYS_BASE - 4096){
-                  palloc_free_page (kpage);
-                  palloc_free_page(temp_fn);
-                  palloc_free_page(argv);
-                  return false; //failed
-              }
+    //Add padding after strings stored to stack
+    while((int) my_esp % 4 != 0){
+      my_esp -= 1;
+      /*check for overflow*/
+      if((int) my_esp < PHYS_BASE - 4096){
+        palloc_free_page (kpage);
+        palloc_free_page(temp_fn);
+        palloc_free_page(argv);
+        return false; //failed
+      }
+    }
 
-              memcpy(my_esp, argv[i], strlen(argv[i]) + 1);
-              argv[i] = my_esp;
-            }
-            //Add padding after strings stored to stack
-            while((int) my_esp % 4 != 0){
+    i = argc - 1;
+    my_esp -= sizeof(char*); //null sent
 
-              my_esp -= 1;
+    /*check for overflow*/
+    if((int) my_esp < PHYS_BASE - 4096){
+      palloc_free_page (kpage);
+      palloc_free_page(temp_fn);
+      palloc_free_page(argv);
+      return false; //failed
+    }
 
-              /*check for overflow*/
-              if((int) my_esp < PHYS_BASE - 4096){
-                  palloc_free_page (kpage);
-                  palloc_free_page(temp_fn);
-                  palloc_free_page(argv);
-                  return false; //failed
-              }
+    //pushing addresses of strings onto stack
+    for(; i >= 0; i--){
+      my_esp -= sizeof(char *);
+      /*check for overflow*/
+      if((int) my_esp < PHYS_BASE - 4096){
+        palloc_free_page (kpage);
+        palloc_free_page(temp_fn);
+        palloc_free_page(argv);
+        return false; //failed
+      }
+      memcpy(my_esp, &argv[i], sizeof(char *));
+    }
 
-            }
-            i = argc - 1;
-            my_esp -= sizeof(char*); //null sent
+    argv_ptr=my_esp;
+    //Push address of argv onto stack
+    my_esp -= sizeof(char **);
+    /*check for overflow*/
+    if((int) my_esp < PHYS_BASE - 4096){
+      palloc_free_page (kpage);
+      palloc_free_page(temp_fn);
+      palloc_free_page(argv);
+      return false; //failed
+    }
 
-              /*check for overflow*/
-              if((int) my_esp < PHYS_BASE - 4096){
-                  palloc_free_page (kpage);
-                  palloc_free_page(temp_fn);
-                  palloc_free_page(argv);
-                  return false; //failed
-              }
+    memcpy(my_esp, &argv_ptr, sizeof(char*));
+    //Push argc onto stack
+    my_esp -= sizeof(int);
+    /*check for overflow*/
+    if((int) my_esp < PHYS_BASE - 4096){
+      palloc_free_page (kpage);
+      palloc_free_page(temp_fn);
+      palloc_free_page(argv);
+      return false; //failed
+    }
 
+    *(int *)my_esp = argc;
+    //Push void* onto stack for return
+    my_esp -= sizeof(int);
+    /*check for overflow*/
+    if((int) my_esp < PHYS_BASE - 4096){
+      palloc_free_page (kpage);
+      palloc_free_page(temp_fn);
+      palloc_free_page(argv);
+      return false; //failed
+    }
 
-            //pushing addresses of strings onto stack
-
-            for(; i >= 0; i--){
-              my_esp -= sizeof(char *);
-
-              /*check for overflow*/
-              if((int) my_esp < PHYS_BASE - 4096){
-                  palloc_free_page (kpage);
-                  palloc_free_page(temp_fn);
-                  palloc_free_page(argv);
-                  return false; //failed
-              }
-
-              memcpy(my_esp, &argv[i], sizeof(char *));
-
-            }
-
-            argv_ptr=my_esp;
-
-            //Push address of argv onto stack
-            my_esp -= sizeof(char **);
-              /*check for overflow*/
-            if((int) my_esp < PHYS_BASE - 4096){
-                  palloc_free_page (kpage);
-                  palloc_free_page(temp_fn);
-                  palloc_free_page(argv);
-                  return false; //failed
-              }
-
-
-            memcpy(my_esp, &argv_ptr, sizeof(char*));
-
-            //Push argc onto stack
-            my_esp -= sizeof(int);
-
-
-              /*check for overflow*/
-              if((int) my_esp < PHYS_BASE - 4096){
-                  palloc_free_page (kpage);
-                  palloc_free_page(temp_fn);
-                  palloc_free_page(argv);
-                  return false; //failed
-              }
-
-
-            *(int *)my_esp = argc;
-
-            //Push void* onto stack for return
-            my_esp -= sizeof(int);
-
-
-              /*check for overflow*/
-              if((int) my_esp < PHYS_BASE - 4096){
-                  palloc_free_page (kpage);
-                  palloc_free_page(temp_fn);
-                  palloc_free_page(argv);
-                  return false; //failed
-              }
-
-
-            *(int *)my_esp = 0;
-            *esp = my_esp;
-            palloc_free_page(temp_fn);
-            palloc_free_page(argv);
-            palloc_free_page(token);
-        } //temp
+    *(int *)my_esp = 0;
+    *esp = my_esp;
+    palloc_free_page(temp_fn);
+    palloc_free_page(argv);
+    palloc_free_page(token);
+  } 
   else
     palloc_free_page (kpage);
   }
