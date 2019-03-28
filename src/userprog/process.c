@@ -58,9 +58,10 @@ process_execute (const char *file_name)
 
   fn = strtok_r(fn_temp, " ", &save_ptr);
   /* Create a new thread to execute FILE_NAME. */
+  //printf("Make my child\n\n");
   tid = thread_create (fn, PRI_DEFAULT, start_process, fn_copy);
 
-  ASSERT(getThreadByTID(tid)!=NULL);
+  //ASSERT(getThreadByTID(tid)!=NULL);
   sema_down(&(t->exec_sema));
 
   if(t->load_status == false){
@@ -81,6 +82,7 @@ process_execute (const char *file_name)
 static void
 start_process (void *file_name_)
 {
+  //printf("Im a birthing child\n\n");
   char *file_name = file_name_;
   struct intr_frame if_;
   bool success;
@@ -98,7 +100,6 @@ start_process (void *file_name_)
   //NEED TO CHECK IF THE PARENT IS DEAD!!!1 RACE CONDITION
   //we need to sema up on both situations, otherwise we will be blocked forever
   struct thread *parent_thread = thread_current()->parent;
-
   if (success){
     parent_thread->load_status = true;
     sema_up(&(parent_thread->exec_sema));
@@ -136,11 +137,13 @@ process_wait (tid_t child_tid UNUSED)
   if(child == NULL){
     return -1; //leave immediately
   }
-
+  //printf("Here\n\n");
   sema_down(&(child->child_exit_sema)); //Waits on child to call exit
   status = child->exit_status;
+  //printf("There\n\n");
   sema_up(&(child-> parent_wait_sema)); //Tells child it has collected exit status
   list_remove(&(child->child_elem));
+  //printf("Everywhere\n\n");
   return status;
 
 
@@ -511,11 +514,18 @@ setup_stack (void **esp, const char *file_name)
         *esp = PHYS_BASE;
 
             //make deep copy of filename
-            char *temp_fn = malloc(strlen(file_name) * sizeof(char));
+            
+            char* temp_fn = palloc_get_page(PAL_ZERO);
+            if(temp_fn==NULL)
+              return TID_ERROR;
+            //char *temp_fn = malloc(strlen(file_name) * sizeof(char));
             strlcpy(temp_fn, file_name, strlen(file_name) + 1); //deep copy
 
             char *token, *save_ptr;
-            char **argv = malloc(sizeof(char *) * strlen(temp_fn));
+            char **argv = palloc_get_page(PAL_ZERO);
+            if(argv==NULL)
+              return TID_ERROR;
+            //char **argv = malloc(sizeof(char *) * strlen(temp_fn));
             char *my_esp = (char *) *esp;
             int argc = 0;
 
@@ -618,8 +628,9 @@ setup_stack (void **esp, const char *file_name)
 
             *(int *)my_esp = 0;
             *esp = my_esp;
-
-                  } //temp
+            palloc_free_page(temp_fn);
+            palloc_free_page(argv);
+        } //temp
                 else
                   palloc_free_page (kpage);
               }

@@ -291,7 +291,7 @@ thread_exit (void)
   struct thread *t = thread_current();
   //t->called_thread_exit = true; //no need
 //  intr_enable();
-
+  //printf("Child is exiting\n");
   sema_up(&(t->child_exit_sema));
   //block so wait can finish, unblock at the end of wait
   sema_down(&(t->parent_wait_sema));
