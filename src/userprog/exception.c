@@ -120,6 +120,7 @@ kill (struct intr_frame *f)
    can find more information about both of these in the
    description of "Interrupt 14--Page Fault Exception (#PF)" in
    [IA32-v3a] section 5.15 "Exception and Interrupt Reference". */
+// Randy and Timothy drove here
 static void
 page_fault (struct intr_frame *f) 
 {
@@ -148,6 +149,7 @@ page_fault (struct intr_frame *f)
   not_present = (f->error_code & PF_P) == 0;
   write = (f->error_code & PF_W) != 0;
   user = (f->error_code & PF_U) != 0;
+  //in the case of a page fault and these conditions, we simply exit with -1
   if(fault_addr==NULL||is_kernel_vaddr(fault_addr)||!is_user_vaddr(fault_addr))
     exit(-1);
   /* To implement virtual memory, delete the rest of the function
