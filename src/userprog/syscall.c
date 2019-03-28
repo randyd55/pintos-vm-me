@@ -121,8 +121,13 @@ exit (int status)
   struct thread *t = thread_current();
   //Set exit status
   t->exit_status = status;
+<<<<<<< HEAD
   //Output exit statement
+=======
+
+>>>>>>> 29cdafe92a068a324d6bebf8c12bfb7ca5ac60ac
   printf("%s: exit(%d)\n",t->name,t->exit_status);
+  
   file_close(t->executable);
   thread_exit();
 }

@@ -12,8 +12,6 @@ const char *test_name = "multi-recurse";
 int
 main (int argc UNUSED, char *argv[])
 {
-  //is it even gettign here?
-  printf("IN HERE \n\n\n\n\n");
 
   int n = atoi (argv[1]);
 
