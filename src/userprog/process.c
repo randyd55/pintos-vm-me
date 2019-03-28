@@ -74,6 +74,7 @@ process_execute (const char *file_name)
     palloc_free_page (fn_copy);
 
   palloc_free_page(fn_temp);
+
   return tid;
 }
 
@@ -143,10 +144,7 @@ process_wait (tid_t child_tid UNUSED)
   //printf("There\n\n");
   sema_up(&(child-> parent_wait_sema)); //Tells child it has collected exit status
   list_remove(&(child->child_elem));
-  //printf("Everywhere\n\n");
   return status;
-
-
 }
 
 /* Free the current process's resources. */
@@ -172,6 +170,7 @@ process_exit (void)
       pagedir_activate (NULL);
       pagedir_destroy (pd);
     }
+  //palloc_free_page(cur);
 }
 
 /* Sets up the CPU for running user code in the current
@@ -505,7 +504,9 @@ setup_stack (void **esp, const char *file_name)
 
   uint8_t *kpage;
   bool success = false;
-
+  char* temp_fn, *token, *save_ptr, *my_esp, *argv_ptr;
+  char** argv;
+  int argc, i;
   kpage = palloc_get_page (PAL_USER | PAL_ZERO);
   if (kpage != NULL)
     {
@@ -515,22 +516,20 @@ setup_stack (void **esp, const char *file_name)
 
             //make deep copy of filename
             
-            char* temp_fn = palloc_get_page(PAL_ZERO);
+            temp_fn = palloc_get_page(PAL_ZERO);
             if(temp_fn==NULL)
               return TID_ERROR;
             //char *temp_fn = malloc(strlen(file_name) * sizeof(char));
             strlcpy(temp_fn, file_name, strlen(file_name) + 1); //deep copy
 
-            char *token, *save_ptr;
-            char **argv = palloc_get_page(PAL_ZERO);
+            argv = palloc_get_page(PAL_ZERO);
             if(argv==NULL)
               return TID_ERROR;
             //char **argv = malloc(sizeof(char *) * strlen(temp_fn));
-            char *my_esp = (char *) *esp;
-            int argc = 0;
+            my_esp = (char *) *esp;
+            argc = 0;
 
-            char* argv_ptr;
-            int i;
+
             for (token = strtok_r (temp_fn, " ", &save_ptr); token != NULL;
               token = strtok_r (NULL, " ", &save_ptr)){
 
@@ -546,6 +545,8 @@ setup_stack (void **esp, const char *file_name)
               /*check for overflow*/
               if((int) my_esp < PHYS_BASE - 4096){
                   palloc_free_page (kpage);
+                  palloc_free_page(temp_fn);
+                  palloc_free_page(argv);
                   return false; //failed
               }
 
@@ -560,6 +561,8 @@ setup_stack (void **esp, const char *file_name)
               /*check for overflow*/
               if((int) my_esp < PHYS_BASE - 4096){
                   palloc_free_page (kpage);
+                  palloc_free_page(temp_fn);
+                  palloc_free_page(argv);
                   return false; //failed
               }
 
@@ -570,6 +573,8 @@ setup_stack (void **esp, const char *file_name)
               /*check for overflow*/
               if((int) my_esp < PHYS_BASE - 4096){
                   palloc_free_page (kpage);
+                  palloc_free_page(temp_fn);
+                  palloc_free_page(argv);
                   return false; //failed
               }
 
@@ -582,6 +587,8 @@ setup_stack (void **esp, const char *file_name)
               /*check for overflow*/
               if((int) my_esp < PHYS_BASE - 4096){
                   palloc_free_page (kpage);
+                  palloc_free_page(temp_fn);
+                  palloc_free_page(argv);
                   return false; //failed
               }
 
@@ -596,6 +603,8 @@ setup_stack (void **esp, const char *file_name)
               /*check for overflow*/
             if((int) my_esp < PHYS_BASE - 4096){
                   palloc_free_page (kpage);
+                  palloc_free_page(temp_fn);
+                  palloc_free_page(argv);
                   return false; //failed
               }
 
@@ -609,6 +618,8 @@ setup_stack (void **esp, const char *file_name)
               /*check for overflow*/
               if((int) my_esp < PHYS_BASE - 4096){
                   palloc_free_page (kpage);
+                  palloc_free_page(temp_fn);
+                  palloc_free_page(argv);
                   return false; //failed
               }
 
@@ -622,6 +633,8 @@ setup_stack (void **esp, const char *file_name)
               /*check for overflow*/
               if((int) my_esp < PHYS_BASE - 4096){
                   palloc_free_page (kpage);
+                  palloc_free_page(temp_fn);
+                  palloc_free_page(argv);
                   return false; //failed
               }
 
@@ -630,10 +643,11 @@ setup_stack (void **esp, const char *file_name)
             *esp = my_esp;
             palloc_free_page(temp_fn);
             palloc_free_page(argv);
+            palloc_free_page(token);
         } //temp
-                else
-                  palloc_free_page (kpage);
-              }
+  else
+    palloc_free_page (kpage);
+  }
 
   //hex_dump(*esp, *esp, PHYS_BASE - *esp,  1);
   //printf("stack setup yolo\n");

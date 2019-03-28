@@ -289,17 +289,22 @@ thread_exit (void)
 
   //intr_disable (); //disable while working with gloab vars
   struct thread *t = thread_current();
+  struct thread *c;
   //t->called_thread_exit = true; //no need
 //  intr_enable();
-  //printf("Child is exiting\n");
   sema_up(&(t->child_exit_sema));
   //block so wait can finish, unblock at the end of wait
   sema_down(&(t->parent_wait_sema));
-
+  struct list_elem* e;
+  for(e=list_begin(&t->children); e!=list_end(&t->children); e=list_next(e)){
+    c=list_entry(e, struct thread, child_elem);
+    sema_up(&(c->parent_wait_sema));
+  }
 
 #ifdef USERPROG
   //thread_current
  // return thread
+  //palloc_free_page
   process_exit ();
 #endif
 
