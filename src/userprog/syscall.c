@@ -23,6 +23,8 @@ syscall_init (void)
 static void
 syscall_handler (struct intr_frame *f UNUSED)
 {
+
+  //Randy Driving
   //Check if stack is valid
   if(!check_pointer(f->esp))
     exit(-1);
@@ -31,72 +33,86 @@ syscall_handler (struct intr_frame *f UNUSED)
   switch(*((uint32_t *) (f->esp))){
     case SYS_EXEC :
       if (check_pointer(*(int*)(f->esp + 4)))
-        f->eax=exec(((char *) *(int*)(f->esp + 4)));
+        f->eax = exec(((char *) *(int*)(f->esp + 4)));
       else
       	exit(-1);
       break;
+
     case SYS_WRITE :
       if (check_pointer(f->esp +4) 
         && check_pointer(*(int*)(f->esp + 8)) 
         && check_pointer(f->esp + 12))
-        f->eax=write(*((uint32_t *) (f->esp + 4) ),
+        f->eax = write(*((uint32_t *) (f->esp + 4) ),
           ((void*)*(int*)(f->esp + 8) ),
           *((unsigned *) (f->esp + 12) ));
       else
       	exit(-1);
       break;
+
     case SYS_READ :
        if (check_pointer(f->esp + 4) 
         && check_pointer(*(int*)(f->esp + 8)) 
         && check_pointer(f->esp + 12))
-          f->eax=read(*((uint32_t *) (f->esp + 4) ),
+          f->eax = read(*((uint32_t *) (f->esp + 4) ),
             ((void*)*(int*)(f->esp + 8) ),
             *((unsigned *) (f->esp + 12) ));
       else
       	exit(-1);
       break;
+
     case SYS_OPEN :
       if (check_pointer(*(int*)(f->esp + 4)))
-        f->eax=open(((char *) *(int*)(f->esp + 4) ));
+        f->eax = open(((char *) *(int*)(f->esp + 4) ));
       else
       	exit(-1);
       break;
+
     case SYS_CLOSE :
       if (check_pointer(f->esp + 4))
         close(*((uint32_t *) (f->esp + 4) ));
       else
       	exit(-1);
       break;
+
     case SYS_CREATE :
 		  if (check_pointer(*(int*)(f->esp +4)))
-        f->eax=create((char*)*(int*) (f->esp + 4),(*(int*)(f->esp + 8)));
+        f->eax = create((char*)*(int*) (f->esp + 4),(*(int*)(f->esp + 8)));
       else
       	exit(-1);
       break;
+
     case SYS_FILESIZE:
-      f->eax= filesize(*(int*)(f->esp +4));
+      f->eax = filesize(*(int*)(f->esp +4));
       break;
+
     case SYS_SEEK:
       seek(*(int*)(f->esp+4),*(unsigned*)(f->esp+8));
       break;
+
     case SYS_TELL:
-      f->eax=tell(*(unsigned*)f->esp+4);
+      f->eax = tell(*(unsigned*)f->esp+4);
       break;
+
     case SYS_HALT :
       halt();
       break;
+
     case SYS_EXIT :
       if (check_pointer(f->esp + 4))
         exit(*((uint32_t *) (f->esp + 4) ));
       else
       	exit(-1);
       break;
+
     case SYS_WAIT :
-      f->eax= wait(*(int*)(f->esp +4));
+      f->eax = wait(*(int*)(f->esp +4));
       break;
+      
   }
+  //Randy Done
 }
 
+//Chineye Driving
 /**
  * Checks that pointer is within valid access space
  */
@@ -110,7 +126,9 @@ check_pointer (uint32_t * stack_ptr)
     return false;
   return true;
 }
+//Chineye Done
 
+//Tim Driving
 /**
  * Halts process
  */
@@ -154,6 +172,9 @@ exec (const char *cmd_line)
   int e = process_execute(cmd_line);
   return e;
 }
+
+//Randy Done
+//Tim Driving
 /**
  * Opens file in filesystem
  */
@@ -235,6 +256,9 @@ read (int fd, const void *buffer, unsigned size)
   return bytes_read;
 }
 
+//Tim Done
+//Anthony Driving
+
 /**
  * Returns filesize of file with given file descriptor
  */
@@ -295,6 +319,8 @@ write (int fd, const void *buffer, unsigned size)
   lock_release(&filesys_lock);
   return written;
 }
+//Anthony Done
+//Randy Driving
 
 /**
  * Sets next byte to be written to or read from of given file descriptor
@@ -339,3 +365,5 @@ close (int fd)
   }
   lock_release(&filesys_lock);
 }
+
+//Randy Done

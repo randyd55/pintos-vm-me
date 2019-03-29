@@ -6,16 +6,16 @@
 #include "threads/synch.h"
 #include "devices/shutdown.h"
 
+//Chineye Driving
 struct lock filesys_lock;
 
 int wait(pid_t pid);
 
 void syscall_init (void);
- /* terminates Pintos by calling shutdown_power_off()*/
 void halt(void);
-/*terminates the current user program*/
+
 void exit(int status);
-/*runs the executable whos name is given by cmd_line*/
+
 pid_t exec(const char *cmd_line);
 
 bool create(const char *file, unsigned intial_size);
@@ -39,4 +39,6 @@ void close(int fd);
 int getFd(void);
 
 bool check_pointer(uint32_t * stack_ptr);
+
+//Chineye Done
 #endif /* userprog/syscall.h */

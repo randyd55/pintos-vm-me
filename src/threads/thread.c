@@ -166,6 +166,8 @@ tid_t
 thread_create (const char *name, int priority,
                thread_func *function, void *aux)
 {
+
+  //Chineye Driving
   struct thread *t;
   struct kernel_thread_frame *kf;
   struct switch_entry_frame *ef;
@@ -205,6 +207,7 @@ thread_create (const char *name, int priority,
   thread_unblock (t);
 
   return tid;
+  //Chineye Done
 }
 
 
@@ -286,6 +289,7 @@ thread_tid (void)
 void
 thread_exit (void)
 {
+  //Tim Driving
   ASSERT (!intr_context ());
 
   struct thread *t = thread_current();
@@ -313,6 +317,8 @@ thread_exit (void)
   thread_current ()->status = THREAD_DYING;
   schedule ();
   NOT_REACHED ();
+
+  //Tim Done
 
 }
 
