@@ -149,8 +149,9 @@ exit (int status)
   t->exit_status = status;
   //Output exit statement
   printf("%s: exit(%d)\n",t->name,t->exit_status);
-  
+  lock_acquire(&filesys_lock);
   file_close(t->executable);
+  lock_release(&filesys_lock);
   thread_exit();
 }
 

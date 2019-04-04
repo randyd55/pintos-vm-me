@@ -126,6 +126,8 @@ start_process (void *file_name_)
   } else {
     parent_thread->load_status = false;
     sema_up(&(parent_thread->exec_sema));
+    sema_up(&(thread_current()->parent_wait_sema)); //still failing multi-oom, not sure if we care, but if we do, try immediately waiting on this thread
+                                                    //after it fails loading
     thread_exit (); /*if load has failed, exit the thread*/
   }
 
@@ -169,8 +171,9 @@ process_wait (tid_t child_tid UNUSED)
   sema_down(&(child->child_exit_sema)); /*waits on child to call exit*/
   status = child->exit_status;
   //Tells child it has collected exit status
-  sema_up(&(child-> parent_wait_sema)); 
   list_remove(&(child->child_elem));
+  sema_up(&(child-> parent_wait_sema)); 
+
 
   //Chineye Done
 
@@ -296,7 +299,6 @@ load (const char *file_name, void (**eip) (void), void **esp)
 {
 
   //Chineye Driving
-  lock_acquire(&filesys_lock); /* ensure mutex for files*/
   struct thread *t = thread_current ();
   struct Elf32_Ehdr ehdr;
   struct file *file = NULL;
@@ -320,6 +322,8 @@ load (const char *file_name, void (**eip) (void), void **esp)
   char * save_ptr = NULL;
   char * fn = strtok_r(fn_temp, " ", &save_ptr);
 
+  lock_acquire(&filesys_lock); /* ensure mutex for files*/
+  
   file = filesys_open (fn);
   if (file == NULL)
     {
