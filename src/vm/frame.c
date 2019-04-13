@@ -6,6 +6,7 @@ init_frame_table(){
   for(i=0; i<NUM_FRAMES; i++){
     frame_table[i] = NULL;
   }
+  lock_init(&frame_lock);
 }
 
 

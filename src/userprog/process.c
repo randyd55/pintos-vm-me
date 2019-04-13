@@ -36,7 +36,8 @@ and exit processes, as well as creating the stack
 #include "threads/vaddr.h"
 #include "threads/malloc.h"
 #include "threads/synch.h"
-#include "vm/frame.c" //works but not good practice ig
+#include "vm/frame.h" 
+#include "vm/page.h" 
 #include "threads/loader.h"
 
 
@@ -503,7 +504,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
               uint32_t read_bytes, uint32_t zero_bytes, bool writable)
 {
   struct frame f = {NULL, NULL, NULL};
-
+  struct sup_page p = {NULL, NULL, NULL};
   
   ASSERT ((read_bytes + zero_bytes) % PGSIZE == 0);
   ASSERT (pg_ofs (upage) == 0);
@@ -537,8 +538,12 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
           palloc_free_page (kpage);
           return false;
         }
+      lock_acquire(&frame_lock);
       set_frame(&f,kpage);
-      //printf("%d\n", 1);
+      p.k_frame = &f;
+      p.swap_location = -1;
+      p.file_location = -1;
+      lock_release(&frame_lock);
       /* Advance. */
       read_bytes -= page_read_bytes;
       zero_bytes -= page_zero_bytes;

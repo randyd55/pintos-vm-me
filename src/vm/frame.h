@@ -1,19 +1,24 @@
 #ifndef VM_FRAME_H
 #define VM_FRAME_H
 
-
+/*
 #include "threads/palloc.h"
 #include <stdio.h>
 #include <string.h>
 #include <bitmap.h>
 #include <debug.h>
 #include "threads/vaddr.h"
-#include "threads/synch.h"
+
 #include "threads/pte.h"
 #include "userprog/process.h"
 #include "userprog/exception.h"
 #include "threads/init.h"
 #include "userprog/pagedir.h"
+*/
+#include "threads/thread.h"
+#include "threads/synch.h"
+
+
 #define NUM_FRAMES 1024
 struct frame
 {
@@ -23,9 +28,12 @@ struct frame
 };
 
 static struct frame *frame_table[NUM_FRAMES];
+struct lock frame_lock;
 void init_frame_table();
 void set_frame(struct frame* f,void* kpage);
 int get_open_frame();
+
+
 /*void set_frame(struct frame *f, void *p_addr, struct thread* new_owner, struct sup_page* res){	
 	f->phys_address = p_addr;
 	f->owner = new_owner;
