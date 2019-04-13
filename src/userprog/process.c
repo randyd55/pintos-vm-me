@@ -36,13 +36,15 @@ and exit processes, as well as creating the stack
 #include "threads/vaddr.h"
 #include "threads/malloc.h"
 #include "threads/synch.h"
-#include "vm/frame.h"
+#include "vm/frame.c" //works but not good practice ig
+#include "threads/loader.h"
 
-#define NUM_FRAMES 1000
+
+
 
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
-static struct frame* frame_table[NUM_FRAMES];
+
 
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
@@ -308,7 +310,6 @@ load (const char *file_name, void (**eip) (void), void **esp)
   off_t file_ofs;
   bool success = false;
   int i;
-
   /* Allocate and activate page directory. */
   t->pagedir = pagedir_create ();
   if (t->pagedir == NULL)
@@ -501,7 +502,7 @@ static bool
 load_segment (struct file *file, off_t ofs, uint8_t *upage,
               uint32_t read_bytes, uint32_t zero_bytes, bool writable)
 {
-  struct frame* f;
+  struct frame f = {NULL, NULL, NULL};
 
   
   ASSERT ((read_bytes + zero_bytes) % PGSIZE == 0);
@@ -536,7 +537,8 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
           palloc_free_page (kpage);
           return false;
         }
-      set_frame(f,kpage);
+      set_frame(&f,kpage);
+      //printf("%d\n", 1);
       /* Advance. */
       read_bytes -= page_read_bytes;
       zero_bytes -= page_zero_bytes;
@@ -725,38 +727,7 @@ install_page (void *upage, void *kpage, bool writable)
           && pagedir_set_page (t->pagedir, upage, kpage, writable));
 }
 
-void
-init_frame_table(){
-  int i;
-  for(i=0; i<NUM_FRAMES; i++){
-    frame_table[i]->phys_address=NULL;
-    frame_table[i]->resident=NULL;
-    frame_table[i]->owner=NULL;
-  }
-}
 
 
-void
-set_frame(struct frame* f,void* kpage){
-  int open_spot;
-  f->phys_address=kpage;
-  f->owner=thread_current();
-  f->resident=NULL; //Fix supplemental page table and implement
-  open_spot=get_open_frame();
-  if(open_spot==-1){
-    printf("AHHHHHHyolo\n\n");
-    exit(-1);
-  }
-  frame_table[open_spot]=f;
-}
-
-int
-get_open_frame(){
-  int i;
-  for(i=0; i<NUM_FRAMES; i++){
-    if(frame_table[i]==NULL)
-      return i;
-  }
-  return -1;
-}
+//wait isn't the frame_table[i] all initialized to null so like how do dis work
 

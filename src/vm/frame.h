@@ -1,3 +1,7 @@
+#ifndef VM_FRAME_H
+#define VM_FRAME_H
+
+
 #include "threads/palloc.h"
 #include <stdio.h>
 #include <string.h>
@@ -10,7 +14,7 @@
 #include "userprog/exception.h"
 #include "threads/init.h"
 #include "userprog/pagedir.h"
-
+#define NUM_FRAMES 1024
 struct frame
 {
 	void* phys_address; //starting address of the frame that this struct represents
@@ -18,6 +22,10 @@ struct frame
 	struct sup_page* resident; //page that lives in this frame, if any
 };
 
+static struct frame *frame_table[NUM_FRAMES];
+void init_frame_table();
+void set_frame(struct frame* f,void* kpage);
+int get_open_frame();
 /*void set_frame(struct frame *f, void *p_addr, struct thread* new_owner, struct sup_page* res){	
 	f->phys_address = p_addr;
 	f->owner = new_owner;
@@ -57,3 +65,5 @@ update_new_sup_page(inside memory);
 remove_page_from_swap();
 update_new_sup_page(outside of swap);
 */
+
+#endif 
