@@ -7,5 +7,6 @@ struct sup_page{
 	void *k_frame;
 	block_sector_t swap_location;
 	block_sector_t file_location;
+	int writable;
 };
 #endif 

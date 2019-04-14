@@ -542,11 +542,13 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       p.k_frame = &f;
       p.swap_location = -1;
       p.file_location = -1;
+      p.writable = writable;
       lock_release(&frame_lock);
       /* Advance. */
       read_bytes -= page_read_bytes;
       zero_bytes -= page_zero_bytes;
       upage += PGSIZE;
+      printf("%d\n", writable);
     }
   return true;
 }

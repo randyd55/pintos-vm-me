@@ -7,6 +7,7 @@
 #include "threads/thread.h"
 #include "threads/palloc.h"
 #include "userprog/process.h"
+#include "vm/frame.h"
 
 
 /* Number of page faults processed. */
@@ -159,10 +160,11 @@ page_fault (struct intr_frame *f)
   /* To implement virtual memory, delete the rest of the function
      body, and replace it with code that brings in the page to
      which fault_addr refers. */
-  //printf("addr: %x\n\n",fault_addr);
   struct thread* t=thread_current();
-  if(fault_addr>(file_length(t->executable)*10000)-(uint8_t)PHYS_BASE){
 
+  
+  
+  if(write&&fault_addr>file_length(t->executable)*3000-(uint8_t)PHYS_BASE||t->stack_pages>NUM_FRAMES){
     bool success;
     uint32_t addr=((uint32_t)f->esp&(~PGMASK));
     uint8_t *kpage = palloc_get_page (PAL_USER);
@@ -171,8 +173,9 @@ page_fault (struct intr_frame *f)
       if(success)
         t->stack_pages++;
     } 
-  } else
+  } else{
       exit(-1);
+  }
 
   //printf("Did that stuff\n\n");
   /*printf ("Page fault at %p: %s error %s page in %s context.\n",
