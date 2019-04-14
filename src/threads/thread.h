@@ -112,6 +112,7 @@ struct thread
 
     struct list_elem child_elem; //elem for children list
     struct list children; // list of children the thread has
+    int stack_pages;
 
 
 

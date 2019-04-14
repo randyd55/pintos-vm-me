@@ -292,9 +292,9 @@ struct Elf32_Phdr
 
 static bool setup_stack (void **esp, const char *file_name);
 static bool validate_segment (const struct Elf32_Phdr *, struct file *);
-static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
-                          uint32_t read_bytes, uint32_t zero_bytes,
-                          bool writable);
+//static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
+//                          uint32_t read_bytes, uint32_t zero_bytes,
+//                          bool writable);
 
 /* Loads an ELF executable from FILE_NAME into the current thread.
    Stores the executable's entry point into *EIP
@@ -421,7 +421,6 @@ load (const char *file_name, void (**eip) (void), void **esp)
   /* Set up stack. */
   if (!setup_stack (esp, file_name))
     goto done;
-
   /* Start address. */
   *eip = (void (*) (void)) ehdr.e_entry;
 
@@ -438,7 +437,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
 /* load() helpers. */
 
-static bool install_page (void *upage, void *kpage, bool writable);
+//static bool install_page (void *upage, void *kpage, bool writable);
 
 /* Checks whether PHDR describes a valid, loadable segment in
    FILE and returns true if so, false otherwise. */
@@ -499,7 +498,7 @@ validate_segment (const struct Elf32_Phdr *phdr, struct file *file)
 
    Return true if successful, false if a memory allocation error
    or disk read error occurs. */
-static bool
+bool
 load_segment (struct file *file, off_t ofs, uint8_t *upage,
               uint32_t read_bytes, uint32_t zero_bytes, bool writable)
 {
@@ -706,7 +705,8 @@ setup_stack (void **esp, const char *file_name)
   else
     palloc_free_page (kpage);
   }
-
+  if(success)
+    thread_current()->stack_pages=1;
   //Tim Done
 
   return success;
@@ -721,7 +721,7 @@ setup_stack (void **esp, const char *file_name)
    with palloc_get_page().
    Returns true on success, false if UPAGE is already mapped or
    if memory allocation fails. */
-static bool
+bool
 install_page (void *upage, void *kpage, bool writable)
 {
   struct thread *t = thread_current ();

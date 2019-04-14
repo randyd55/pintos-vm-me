@@ -491,6 +491,7 @@ init_thread (struct thread *t, const char *name, int priority)
   t->magic = THREAD_MAGIC;
   t->exit_status = -1;
   t->fd = -1;
+  t->stack_pages=0;
   //initialize semaphores for syscall synchronization
   sema_init(&(t->child_exit_sema), 0);
   sema_init(&(t->parent_wait_sema), 0);
