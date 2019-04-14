@@ -8,7 +8,7 @@
 #include "threads/palloc.h"
 #include "userprog/process.h"
 #include "vm/frame.h"
-
+#include "userprog/syscall.h"
 
 /* Number of page faults processed. */
 static long long page_fault_cnt;
@@ -174,6 +174,8 @@ page_fault (struct intr_frame *f)
         t->stack_pages++;
     } 
   } else{
+      if(lock_held_by_current_thread(&filesys_lock))
+	lock_release(&filesys_lock);
       exit(-1);
   }
 

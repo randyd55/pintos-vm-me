@@ -6,6 +6,9 @@
 #include <stdint.h>
 #include "filesys/file.h"
 #include "synch.h"
+#include "lib/kernel/hash.h"
+#include "vm/page.h"
+#include "lib/kernel/bitmap.h"
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -113,6 +116,7 @@ struct thread
     struct list_elem child_elem; //elem for children list
     struct list children; // list of children the thread has
     int stack_pages;
+    struct hash spt;      //supplemental page table
 
 
 
