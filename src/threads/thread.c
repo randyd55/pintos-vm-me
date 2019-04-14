@@ -202,6 +202,7 @@ thread_create (const char *name, int priority,
   sf->eip = switch_entry;
   sf->ebp = 0;
   t->parent = thread_current();
+hash_init(&(t->spt), page_hash, page_less, NULL);
 
   /* Add to run queue. */
 
@@ -497,7 +498,7 @@ init_thread (struct thread *t, const char *name, int priority)
   sema_init(&(t->parent_wait_sema), 0);
   sema_init(&(t->exec_sema), 0);
   list_init(&(t->children));
-  hash_init(&(t->spt), page_hash, page_less, NULL);
+  //hash_init(&(t->spt), page_hash, page_less, NULL);
 
 
   old_level = intr_disable();
