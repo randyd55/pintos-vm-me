@@ -12,6 +12,7 @@
 #include "threads/synch.h"
 #include "threads/vaddr.h"
 #include "vm/frame.h"
+#include "vm/swap.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -94,11 +95,13 @@ thread_init (void)
   list_init (&ready_list);
   list_init (&all_list);
   init_frame_table();
+  
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
   init_thread (initial_thread, "main", PRI_DEFAULT);
   initial_thread->status = THREAD_RUNNING;
   initial_thread->tid = allocate_tid ();
+
 }
 
 /* Starts preemptive thread scheduling by enabling interrupts.
@@ -110,7 +113,9 @@ thread_start (void)
   struct semaphore idle_started;
   sema_init (&idle_started, 0);
   thread_create ("idle", PRI_MIN, idle, &idle_started);
-
+  if(init_swap(4) ==  NULL){
+    exit(-1);
+  }
   /* Start preemptive thread scheduling. */
   intr_enable ();
 
@@ -202,7 +207,7 @@ thread_create (const char *name, int priority,
   sf->eip = switch_entry;
   sf->ebp = 0;
   t->parent = thread_current();
-hash_init(&(t->spt), page_hash, page_less, NULL);
+  hash_init(&(t->spt), page_hash, page_less, NULL);
 
   /* Add to run queue. */
 

@@ -11,7 +11,7 @@ init_frame_table(){
 
 
 void
-set_frame(struct frame* f,void* kpage){
+set_frame(struct frame* f,void* kpage, struct sup_page* s){
   int open_spot;
   if(kpage == NULL){
     printf("%s\n", "asdf");
@@ -19,7 +19,7 @@ set_frame(struct frame* f,void* kpage){
   }
   f->phys_address=kpage;
   f->owner=thread_current();
-  f->resident=NULL; //Fix supplemental page table and implement
+  f->resident=s; //Fix supplemental page table and implement
 
   open_spot=get_open_frame();
   if(open_spot==-1){

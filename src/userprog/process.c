@@ -502,8 +502,7 @@ bool
 load_segment (struct file *file, off_t ofs, uint8_t *upage,
               uint32_t read_bytes, uint32_t zero_bytes, bool writable)
 {
-  struct frame f = {NULL, NULL, NULL};
-  struct sup_page p = {NULL, NULL, NULL};
+
   
   ASSERT ((read_bytes + zero_bytes) % PGSIZE == 0);
   ASSERT (pg_ofs (upage) == 0);
@@ -537,13 +536,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
           palloc_free_page (kpage);
           return false;
         }
-      lock_acquire(&frame_lock);
-      set_frame(&f,kpage);
-      p.k_frame = &f;
-      p.swap_location = -1;
-      p.file_location = -1;
-      p.writable = writable;
-      lock_release(&frame_lock);
+      
       /* Advance. */
       read_bytes -= page_read_bytes;
       zero_bytes -= page_zero_bytes;
@@ -710,7 +703,7 @@ setup_stack (void **esp, const char *file_name)
   if(success)
     thread_current()->stack_pages=1;
   //Tim Done
-
+  printf("Stack setup!\n\n");
   return success;
 }
 
@@ -726,15 +719,45 @@ setup_stack (void **esp, const char *file_name)
 bool
 install_page (void *upage, void *kpage, bool writable)
 {
+  printf("Install Page\n\n");
   struct thread *t = thread_current ();
-
+  struct frame f = {NULL, NULL, NULL};
+  struct sup_page p;
+  if(pagedir_get_page (t->pagedir, upage) != NULL)
+    return false;
+  bool success;
   /* Verify that there's not already a page at that virtual
      address, then map our page there. */
-  return (pagedir_get_page (t->pagedir, upage) == NULL
-          && pagedir_set_page (t->pagedir, upage, kpage, writable));
+  success = pagedir_set_page (t->pagedir, upage, kpage, writable);
+  if(success){
+    lock_acquire(&frame_lock);
+    set_frame(&f,kpage,&p);
+    p.k_frame = &f;
+    p.swap_location = -1;
+    p.file_location = -1;
+    p.writable = writable;
+    p.upage = upage;
+    printf("upage: %x\n\n",upage);
+    hash_insert (&(t->spt), &(p.hash_elem));
+    //printf("Yolo Swaggins Yolo\n\n");
+    lock_release(&frame_lock);
+  }
+
+
+  return success;
+}
+
+bool
+replace_page (struct frame *f, struct sup_page *new_sup_page){
+  printf("Replace page\n\n");
+  pagedir_clear_page (f->owner->pagedir, f->resident->upage);
+  f->owner = thread_current();
+  uint8_t *kpage = palloc_get_page (PAL_USER | PAL_ZERO);
+  return pagedir_set_page (f->owner->pagedir, new_sup_page->upage, kpage, new_sup_page->writable);
+
 }
 
 
 
-//wait isn't the frame_table[i] all initialized to null so like how do dis work
+
 

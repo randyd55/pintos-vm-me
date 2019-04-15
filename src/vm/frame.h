@@ -30,7 +30,7 @@ struct frame
 static struct frame *frame_table[NUM_FRAMES];
 struct lock frame_lock;
 void init_frame_table();
-void set_frame(struct frame* f,void* kpage);
+void set_frame(struct frame* f,void* kpage, struct sup_page* s);
 int get_open_frame();
 
 

@@ -3,9 +3,10 @@
 
 #include "devices/block.h"
 #include "lib/kernel/hash.h"
-
+#include "threads/thread.h"
 struct sup_page{
 	void *k_frame;
+	void *upage;
 	block_sector_t swap_location;
 	block_sector_t file_location;
 	int writable;
