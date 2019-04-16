@@ -20,6 +20,9 @@ page_less (const struct hash_elem *a_, const struct hash_elem *b_,
   //printf("Yolo Swaggins\n\n");
   const struct sup_page *b = hash_entry (b_, struct sup_page, hash_elem);
   //printf("Yolo>?>>\n\n");
+  // if(a->upage != NULL){
+  //   printf("AHHHHH \n\n\n\n\n");
+  // }
   return a->upage < b->upage;
 }
 

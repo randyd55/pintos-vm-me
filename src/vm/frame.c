@@ -1,4 +1,6 @@
 #include "frame.h"
+//#include "threads/malloc.c"
+
 
 void
 init_frame_table(){
@@ -11,24 +13,30 @@ init_frame_table(){
 
 
 void
-set_frame(struct frame* f,void* kpage, struct sup_page* s){
+set_frame(struct frame* f,void* kpage, struct sup_page* sp){
   int open_spot;
   if(kpage == NULL){
     printf("%s\n", "asdf");
     exit(-1);
   }
+
+  // if(*sp == NULL){
+  //   printf("AHHHHHHHHHH\n\n\n");
+  // }
+
   f->phys_address=kpage;
   f->owner=thread_current();
-  f->resident=s; //Fix supplemental page table and implement
+  f->resident=sp; //Fix supplemental page table and implement
 
   open_spot=get_open_frame();
   if(open_spot==-1){
-    printf("AHHHHHHyolo\n\n");
+  //  printf("AHHHHHHyolo\n\n");
     exit(-1);
   }
 
   frame_table[open_spot]=f;
-  
+  sp = malloc(sizeof(struct sup_page));
+
 
 }
 

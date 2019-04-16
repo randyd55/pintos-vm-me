@@ -95,7 +95,7 @@ thread_init (void)
   list_init (&ready_list);
   list_init (&all_list);
   init_frame_table();
-  
+
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
   init_thread (initial_thread, "main", PRI_DEFAULT);
@@ -207,7 +207,7 @@ thread_create (const char *name, int priority,
   sf->eip = switch_entry;
   sf->ebp = 0;
   t->parent = thread_current();
-  hash_init(&(t->spt), page_hash, page_less, NULL);
+  // hash_init(&(t->spt), page_hash, page_less, NULL);
 
   /* Add to run queue. */
 
@@ -634,7 +634,7 @@ struct thread* getChildByPID(pid_t pid){
   struct thread* t=thread_current();
   struct thread* child;
   struct list_elem* e;
-  for(e=list_begin(&(t->children)); e!=list_end(&(t->children)); 
+  for(e=list_begin(&(t->children)); e!=list_end(&(t->children));
                                     e=list_next(e)){
     child=list_entry(e, struct thread, child_elem);
     if(child->pid==pid){

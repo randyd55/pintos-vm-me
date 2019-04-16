@@ -25,5 +25,4 @@ bool
 page_less (const struct hash_elem *a_, const struct hash_elem *b_,
            void *aux);
 
-#endif 
-
+#endif

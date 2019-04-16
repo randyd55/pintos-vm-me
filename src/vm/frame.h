@@ -17,6 +17,7 @@
 */
 #include "threads/thread.h"
 #include "threads/synch.h"
+//#include "page.h"
 
 
 #define NUM_FRAMES 1024
@@ -34,10 +35,10 @@ void set_frame(struct frame* f,void* kpage, struct sup_page* s);
 int get_open_frame();
 
 
-/*void set_frame(struct frame *f, void *p_addr, struct thread* new_owner, struct sup_page* res){	
+/*void set_frame(struct frame *f, void *p_addr, struct thread* new_owner, struct sup_page* res){
 	f->phys_address = p_addr;
 	f->owner = new_owner;
-	f->resident = res;	
+	f->resident = res;
 }*/
 
 /*
@@ -74,4 +75,4 @@ remove_page_from_swap();
 update_new_sup_page(outside of swap);
 */
 
-#endif 
+#endif

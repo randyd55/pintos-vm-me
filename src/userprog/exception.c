@@ -32,7 +32,7 @@ static void page_fault (struct intr_frame *);
    Refer to [IA32-v3a] section 5.15 "Exception and Interrupt
    Reference" for a description of each of these exceptions. */
 void
-exception_init (void) 
+exception_init (void)
 {
   /* These exceptions can be raised explicitly by a user program,
      e.g. via the INT, INT3, INTO, and BOUND instructions.  Thus,
@@ -67,14 +67,14 @@ exception_init (void)
 
 /* Prints exception statistics. */
 void
-exception_print_stats (void) 
+exception_print_stats (void)
 {
   printf ("Exception: %lld page faults\n", page_fault_cnt);
 }
 
 /* Handler for an exception (probably) caused by a user process. */
 static void
-kill (struct intr_frame *f) 
+kill (struct intr_frame *f)
 {
   /* This interrupt is one (probably) caused by a user process.
      For example, the process might have tried to access unmapped
@@ -83,7 +83,7 @@ kill (struct intr_frame *f)
      the kernel.  Real Unix-like operating systems pass most
      exceptions back to the process via signals, but we don't
      implement them. */
-     
+
   /* The interrupt frame's code segment value tells us where the
      exception originated. */
   switch (f->cs)
@@ -94,7 +94,7 @@ kill (struct intr_frame *f)
       printf ("%s: dying due to interrupt %#04x (%s).\n",
               thread_name (), f->vec_no, intr_name (f->vec_no));
       intr_dump_frame (f);
-      thread_exit (); 
+      thread_exit ();
 
     case SEL_KCSEG:
       /* Kernel's code segment, which indicates a kernel bug.
@@ -102,7 +102,7 @@ kill (struct intr_frame *f)
          may cause kernel exceptions--but they shouldn't arrive
          here.)  Panic the kernel to make the point.  */
       intr_dump_frame (f);
-      PANIC ("Kernel bug - unexpected interrupt in kernel"); 
+      PANIC ("Kernel bug - unexpected interrupt in kernel");
 
     default:
       /* Some other code segment?  Shouldn't happen.  Panic the
@@ -126,7 +126,7 @@ kill (struct intr_frame *f)
    [IA32-v3a] section 5.15 "Exception and Interrupt Reference". */
 // Randy and Timothy drove here
 static void
-page_fault (struct intr_frame *f) 
+page_fault (struct intr_frame *f)
 {
   bool not_present;  /* True: not-present page, false: writing r/o page. */
   bool write;        /* True: access was write, false: access was read. */
@@ -140,7 +140,7 @@ page_fault (struct intr_frame *f)
      See [IA32-v2a] "MOV--Move to/from Control Registers" and
      [IA32-v3a] 5.15 "Interrupt 14--Page Fault Exception
      (#PF)". */
-  
+
   asm ("movl %%cr2, %0" : "=r" (fault_addr));
 
   /* Turn interrupts back on (they were only off so that we could
@@ -155,7 +155,7 @@ page_fault (struct intr_frame *f)
   write = (f->error_code & PF_W) != 0;
   user = (f->error_code & PF_U) != 0;
   //in the case of a page fault and these conditions, we simply exit with -1
-  if(fault_addr==NULL||is_kernel_vaddr(fault_addr)||!is_user_vaddr(fault_addr)){
+  if(fault_addr==NULL||!is_user_vaddr(fault_addr)){
     printf("Died due to bad address %x\n\n", fault_addr);
     exit(-1);
   }
@@ -167,7 +167,7 @@ page_fault (struct intr_frame *f)
   p = page_lookup(fault_addr);
   //uninstall();
   //remove_from_frame();
-  
+
   if(write&&fault_addr>file_length(t->executable)*3000-(uint8_t)PHYS_BASE||t->stack_pages>STACK_LIMIT){
     bool success;
     uint32_t addr=((uint32_t)f->esp&(~PGMASK));
@@ -176,7 +176,7 @@ page_fault (struct intr_frame *f)
       success = install_page (((uint8_t *)PHYS_BASE-(t->stack_pages+1)*PGSIZE), kpage, true);
       if(success)
         t->stack_pages++;
-    } 
+    }
   } else{
       /*if(lock_held_by_current_thread(&filesys_lock))
 	       lock_release(&filesys_lock);
@@ -198,4 +198,3 @@ page_fault (struct intr_frame *f)
 
   //kill (f);
 }
-

@@ -36,8 +36,8 @@ and exit processes, as well as creating the stack
 #include "threads/vaddr.h"
 #include "threads/malloc.h"
 #include "threads/synch.h"
-#include "vm/frame.h" 
-#include "vm/page.h" 
+#include "vm/frame.h"
+#include "vm/page.h"
 #include "threads/loader.h"
 
 
@@ -127,6 +127,8 @@ start_process (void *file_name_)
   /*determine if child thread loaded properly*/
   if (success){
     parent_thread->load_status = true;
+    //printf("AHHHHHHHHHHHHHHHHHHH \n\n\n\n");
+    hash_init(&(thread_current()->spt), page_hash, page_less, NULL);
     sema_up(&(parent_thread->exec_sema));
 
   } else {
@@ -178,7 +180,7 @@ process_wait (tid_t child_tid UNUSED)
   status = child->exit_status;
   //Tells child it has collected exit status
   list_remove(&(child->child_elem));
-  sema_up(&(child-> parent_wait_sema)); 
+  sema_up(&(child-> parent_wait_sema));
 
 
   //Chineye Done
@@ -328,7 +330,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   char * fn = strtok_r(fn_temp, " ", &save_ptr);
 
   lock_acquire(&filesys_lock); /* ensure mutex for files*/
-  
+
   file = filesys_open (fn);
   if (file == NULL)
     {
@@ -503,7 +505,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
               uint32_t read_bytes, uint32_t zero_bytes, bool writable)
 {
 
-  
+
   ASSERT ((read_bytes + zero_bytes) % PGSIZE == 0);
   ASSERT (pg_ofs (upage) == 0);
   ASSERT (ofs % PGSIZE == 0);
@@ -536,7 +538,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
           palloc_free_page (kpage);
           return false;
         }
-      
+
       /* Advance. */
       read_bytes -= page_read_bytes;
       zero_bytes -= page_zero_bytes;
@@ -618,7 +620,7 @@ setup_stack (void **esp, const char *file_name)
         memcpy(my_esp, argv[i], strlen(argv[i]) + 1);
         argv[i] = my_esp;
       }
-    
+
       //Add padding after strings stored to stack
       while((int) my_esp % 4 != 0){
         my_esp -= 1;
@@ -703,7 +705,7 @@ setup_stack (void **esp, const char *file_name)
   if(success)
     thread_current()->stack_pages=1;
   //Tim Done
-  printf("Stack setup!\n\n");
+  //printf("Stack setup!\n\n");
   return success;
 }
 
@@ -719,27 +721,45 @@ setup_stack (void **esp, const char *file_name)
 bool
 install_page (void *upage, void *kpage, bool writable)
 {
-  printf("Install Page\n\n");
+
+  //printf("Install Page\n\n");
   struct thread *t = thread_current ();
   struct frame f = {NULL, NULL, NULL};
-  struct sup_page p;
+  struct sup_page *sp = palloc_get_page(PAL_USER | PAL_ZERO);
+
   if(pagedir_get_page (t->pagedir, upage) != NULL)
     return false;
   bool success;
+  //printf("AHHHHHHHHHHH 2 \n\n\n\n\n\n\n");
+
   /* Verify that there's not already a page at that virtual
      address, then map our page there. */
   success = pagedir_set_page (t->pagedir, upage, kpage, writable);
   if(success){
     lock_acquire(&frame_lock);
-    set_frame(&f,kpage,&p);
-    p.k_frame = &f;
-    p.swap_location = -1;
-    p.file_location = -1;
-    p.writable = writable;
-    p.upage = upage;
+    set_frame(&f, kpage, &sp); //page should be initalizaed/allocated here
+    //printf("AHHHHHHHHHHH 2 \n\n\n\n\n\n\n");
+
+    // if(sp->k_frame == NULL){
+    //   printf("AHHHHHHHHHH 4\n\n\n");
+    // }
+    printf("AHHHHHHHHHHH 5 \n\n\n\n\n\n\n");
+
+    sp->k_frame = &f;
+    sp->swap_location = -1;
+    sp->file_location = -1;
+    sp->writable = writable;
+    sp->upage = upage;
     printf("upage: %x\n\n",upage);
-    hash_insert (&(t->spt), &(p.hash_elem));
+    //  if(&sp->hash_elem == NULL){
+    //  printf("AHHHHHHHHHH 4\n\n\n");
+    // }
+    hash_insert (&(t->spt), &sp->hash_elem); //page should be allocated by here
     //printf("Yolo Swaggins Yolo\n\n");
+
+    printf("AHHHHHHHHHHH 6 \n\n\n\n\n\n\n");
+
+
     lock_release(&frame_lock);
   }
 
@@ -749,15 +769,10 @@ install_page (void *upage, void *kpage, bool writable)
 
 bool
 replace_page (struct frame *f, struct sup_page *new_sup_page){
-  printf("Replace page\n\n");
+  //printf("Replace page\n\n");
   pagedir_clear_page (f->owner->pagedir, f->resident->upage);
   f->owner = thread_current();
   uint8_t *kpage = palloc_get_page (PAL_USER | PAL_ZERO);
   return pagedir_set_page (f->owner->pagedir, new_sup_page->upage, kpage, new_sup_page->writable);
 
 }
-
-
-
-
-
