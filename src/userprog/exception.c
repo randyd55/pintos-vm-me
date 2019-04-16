@@ -167,10 +167,11 @@ page_fault (struct intr_frame *f)
   p = page_lookup(fault_addr);
   //uninstall();
   //remove_from_frame();
-  //if(get_open_frame()==-1){
-   //  evict_this_frame_in_particular();
-  //}
-  if(write&&fault_addr>file_length(t->executable)*3000-(uint8_t)PHYS_BASE&&t->stack_pages<STACK_LIMIT){
+  if(get_open_frame()==-1&&p!=NULL){
+     replace_page(evict_this_frame_in_particular(),p);
+  }
+  else if(write&&fault_addr>file_length(t->executable)*3000-(uint8_t)PHYS_BASE&&t->stack_pages<STACK_LIMIT){
+    printf("Im a page fault\n\n");
     bool success;
     uint32_t addr=((uint32_t)f->esp&(~PGMASK));
     uint8_t *kpage = palloc_get_page (PAL_USER);
@@ -181,6 +182,7 @@ page_fault (struct intr_frame *f)
     }
 
   } else{
+     printf("Im a page faults bastard child\n\n");
       /*if(lock_held_by_current_thread(&filesys_lock))
 	       lock_release(&filesys_lock);
       if(lock_held_by_current_thread(&frame_lock))
@@ -191,7 +193,7 @@ page_fault (struct intr_frame *f)
       if(lock_held_by_current_thread(&frame_lock)){
          lock_release(&frame_lock);
       }
-      exit(-1);
+      exit(-100);
   }
 
 
@@ -210,5 +212,5 @@ page_fault (struct intr_frame *f)
 }
 struct frame*
 evict_this_frame_in_particular(){
-   return frame_table[page_fault_cnt%NUM_FRAMES];
+   return &frame_table[page_fault_cnt%NUM_FRAMES];
 }

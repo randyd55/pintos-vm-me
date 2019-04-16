@@ -116,6 +116,7 @@ start_process (void *file_name_)
   if_.eflags = FLAG_IF | FLAG_MBS;
   hash_init(&(thread_current()->spt), page_hash, page_less, NULL);
   success = load (file_name, &if_.eip, &if_.esp);
+    printf("Im alive\n\n");
 
 
   /* If load failed, quit. */
@@ -131,6 +132,8 @@ start_process (void *file_name_)
     sema_up(&(parent_thread->exec_sema));
 
   } else {
+        printf("Im alive\n\n");
+
     parent_thread->load_status = false;
     sema_up(&(parent_thread->exec_sema));
     sema_up(&(thread_current()->parent_wait_sema)); //still failing multi-oom, not sure if we care, but if we do, try immediately waiting on this thread
@@ -534,6 +537,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       /* Add the page to the process's address space. */
       if (!install_page (upage, kpage, writable))
         {
+          
           palloc_free_page (kpage);
           return false;
         }
@@ -759,10 +763,11 @@ install_page (void *upage, void *kpage, bool writable)
 
 bool
 replace_page (struct frame *f, struct sup_page *new_sup_page){
-  //printf("Replace page\n\n");
+  printf("Replace page\n\n");
   pagedir_clear_page (f->owner->pagedir, f->resident->upage);
   f->owner = thread_current();
   uint8_t *kpage = palloc_get_page (PAL_USER | PAL_ZERO);
+  exit(-2);
   return pagedir_set_page (f->owner->pagedir, new_sup_page->upage, kpage, new_sup_page->writable);
 
 }

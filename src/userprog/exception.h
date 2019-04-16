@@ -8,5 +8,6 @@
 
 void exception_init (void);
 void exception_print_stats (void);
+struct frame* evict_this_frame_in_particular();
 
 #endif /* userprog/exception.h */
