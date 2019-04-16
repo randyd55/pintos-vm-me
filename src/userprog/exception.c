@@ -156,7 +156,7 @@ page_fault (struct intr_frame *f)
   user = (f->error_code & PF_U) != 0;
   //in the case of a page fault and these conditions, we simply exit with -1
   if(fault_addr==NULL||!is_user_vaddr(fault_addr)){
-    printf("Died due to bad address %x\n\n", fault_addr);
+    //printf("Died due to bad address %x\n\n", fault_addr);
     exit(-1);
   }
   /* To implement virtual memory, delete the rest of the function
@@ -167,8 +167,10 @@ page_fault (struct intr_frame *f)
   p = page_lookup(fault_addr);
   //uninstall();
   //remove_from_frame();
-
-  if(write&&fault_addr>file_length(t->executable)*3000-(uint8_t)PHYS_BASE||t->stack_pages>STACK_LIMIT){
+  //if(get_open_frame()==-1){
+   //  evict_this_frame_in_particular();
+  //}
+  if(write&&fault_addr>file_length(t->executable)*3000-(uint8_t)PHYS_BASE&&t->stack_pages<STACK_LIMIT){
     bool success;
     uint32_t addr=((uint32_t)f->esp&(~PGMASK));
     uint8_t *kpage = palloc_get_page (PAL_USER);
@@ -177,13 +179,21 @@ page_fault (struct intr_frame *f)
       if(success)
         t->stack_pages++;
     }
+
   } else{
       /*if(lock_held_by_current_thread(&filesys_lock))
 	       lock_release(&filesys_lock);
       if(lock_held_by_current_thread(&frame_lock))
          lock_release(&frame_lock);*/
+      if(lock_held_by_current_thread(&filesys_lock)){
+         lock_release(&filesys_lock);
+      }
+      if(lock_held_by_current_thread(&frame_lock)){
+         lock_release(&frame_lock);
+      }
       exit(-1);
   }
+
 
   //printf("Did that stuff\n\n");
   /*printf ("Page fault at %p: %s error %s page in %s context.\n",
@@ -197,4 +207,8 @@ page_fault (struct intr_frame *f)
 
 
   //kill (f);
+}
+struct frame*
+evict_this_frame_in_particular(){
+   return frame_table[page_fault_cnt%NUM_FRAMES];
 }

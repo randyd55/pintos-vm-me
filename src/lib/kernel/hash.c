@@ -32,10 +32,6 @@ hash_init (struct hash *h,
   h->less = less;
   h->aux = aux;
 
-  // if (h->less == NULL){
-  //   printf("ahhhhh!");
-  // }
-
   if (h->buckets != NULL)
     {
       hash_clear (h, NULL);
@@ -102,11 +98,7 @@ hash_destroy (struct hash *h, hash_action_func *destructor)
 struct hash_elem *
 hash_insert (struct hash *h, struct hash_elem *new)
 {
-  // printf("AHHHHHHHHHHH 3 \n\n\n\n\n\n\n");
-
   struct list *bucket = find_bucket (h, new);
-  printf("AHHHHHHHHHHH 3 \n\n\n\n\n\n\n");
-
   struct hash_elem *old = find_elem (h, bucket, new);
 
 
@@ -314,11 +306,8 @@ hash_int (int i)
 static struct list *
 find_bucket (struct hash *h, struct hash_elem *e)
 {
-  printf("AHHHHHHHHHHH 3 \n\n\n\n\n\n\n");
 
   size_t bucket_idx = h->hash (e, h->aux) & (h->bucket_cnt - 1);
-  //printf("AHHHHHHHHHHH 13 \n\n\n\n\n\n\n");
-
   return &h->buckets[bucket_idx];
 }
 

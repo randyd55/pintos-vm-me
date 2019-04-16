@@ -114,6 +114,7 @@ start_process (void *file_name_)
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
+  hash_init(&(thread_current()->spt), page_hash, page_less, NULL);
   success = load (file_name, &if_.eip, &if_.esp);
 
 
@@ -127,8 +128,6 @@ start_process (void *file_name_)
   /*determine if child thread loaded properly*/
   if (success){
     parent_thread->load_status = true;
-    //printf("AHHHHHHHHHHHHHHHHHHH \n\n\n\n");
-    hash_init(&(thread_current()->spt), page_hash, page_less, NULL);
     sema_up(&(parent_thread->exec_sema));
 
   } else {
@@ -724,41 +723,32 @@ install_page (void *upage, void *kpage, bool writable)
 
   //printf("Install Page\n\n");
   struct thread *t = thread_current ();
-  struct frame f = {NULL, NULL, NULL};
-  struct sup_page *sp = palloc_get_page(PAL_USER | PAL_ZERO);
-
+  struct frame *f = palloc_get_page(PAL_USER);
+  struct sup_page *sp = palloc_get_page(PAL_USER);
+  if(f == NULL || sp == NULL){
+    printf("Bad heap shit\n\n");
+    exit(-1);
+  }
   if(pagedir_get_page (t->pagedir, upage) != NULL)
     return false;
   bool success;
-  //printf("AHHHHHHHHHHH 2 \n\n\n\n\n\n\n");
 
   /* Verify that there's not already a page at that virtual
      address, then map our page there. */
   success = pagedir_set_page (t->pagedir, upage, kpage, writable);
   if(success){
     lock_acquire(&frame_lock);
-    set_frame(&f, kpage, &sp); //page should be initalizaed/allocated here
-    //printf("AHHHHHHHHHHH 2 \n\n\n\n\n\n\n");
+    set_frame(f, kpage, sp); //page should be initalizaed/allocated here
+  
 
-    // if(sp->k_frame == NULL){
-    //   printf("AHHHHHHHHHH 4\n\n\n");
-    // }
-    printf("AHHHHHHHHHHH 5 \n\n\n\n\n\n\n");
-
-    sp->k_frame = &f;
+    sp->k_frame = f;
     sp->swap_location = -1;
     sp->file_location = -1;
     sp->writable = writable;
     sp->upage = upage;
-    printf("upage: %x\n\n",upage);
-    //  if(&sp->hash_elem == NULL){
-    //  printf("AHHHHHHHHHH 4\n\n\n");
-    // }
-    hash_insert (&(t->spt), &sp->hash_elem); //page should be allocated by here
-    //printf("Yolo Swaggins Yolo\n\n");
+    //printf("upage: %x\n\n",upage);
 
-    printf("AHHHHHHHHHHH 6 \n\n\n\n\n\n\n");
-
+    hash_insert (&(t->spt), &(sp->hash_elem)); //page should be allocated by here
 
     lock_release(&frame_lock);
   }

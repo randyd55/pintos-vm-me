@@ -152,8 +152,6 @@ exit (int status)
   lock_acquire(&filesys_lock);
   file_close(t->executable);
   lock_release(&filesys_lock);
-  if(lock_held_by_current_thread(&frame_lock))
-    lock_release(&frame_lock);
   thread_exit();
 }
 
