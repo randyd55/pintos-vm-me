@@ -155,7 +155,7 @@ page_fault (struct intr_frame *f)
   write = (f->error_code & PF_W) != 0;
   user = (f->error_code & PF_U) != 0;
   //in the case of a page fault and these conditions, we simply exit with -1
-  if(fault_addr==NULL||!is_user_vaddr(fault_addr)){
+  if(fault_addr==NULL|| is_kernel_vaddr(fault_addr) || !is_user_vaddr(fault_addr)){
     //printf("Died due to bad address %x\n\n", fault_addr);
     exit(-1);
   }
