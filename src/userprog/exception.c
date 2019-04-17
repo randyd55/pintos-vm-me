@@ -154,8 +154,16 @@ page_fault (struct intr_frame *f)
   not_present = (f->error_code & PF_P) == 0;
   write = (f->error_code & PF_W) != 0;
   user = (f->error_code & PF_U) != 0;
+  bool bad_read_below_esp = !write
+  && (((uint32_t) fault_addr) > ((uint32_t) f->esp));
+
+  // if(!write && ((uint32_t) fault_addr) > ((uint32_t) f->esp)){
+  //   exit(-1);
+  // }
+
   //in the case of a page fault and these conditions, we simply exit with -1
-  if(fault_addr==NULL|| is_kernel_vaddr(fault_addr) || !is_user_vaddr(fault_addr)){
+  if(fault_addr==NULL|| bad_read_below_esp|| is_kernel_vaddr(fault_addr) ||
+  !is_user_vaddr(fault_addr)){
     //printf("Died due to bad address %x\n\n", fault_addr);
     exit(-1);
   }
@@ -171,7 +179,7 @@ page_fault (struct intr_frame *f)
      replace_page(evict_this_frame_in_particular(),p);
   }
   else if(write&&fault_addr>file_length(t->executable)*3000-(uint8_t)PHYS_BASE&&t->stack_pages<STACK_LIMIT){
-    printf("Im a page fault\n\n");
+    //printf("Im a page fault\n\n");
     bool success;
     uint32_t addr=((uint32_t)f->esp&(~PGMASK));
     uint8_t *kpage = palloc_get_page (PAL_USER);
@@ -182,7 +190,7 @@ page_fault (struct intr_frame *f)
     }
 
   } else{
-     printf("Im a page faults bastard child\n\n");
+    // printf("Im a page faults bastard child\n\n");
       /*if(lock_held_by_current_thread(&filesys_lock))
 	       lock_release(&filesys_lock);
       if(lock_held_by_current_thread(&frame_lock))
@@ -193,7 +201,7 @@ page_fault (struct intr_frame *f)
       if(lock_held_by_current_thread(&frame_lock)){
          lock_release(&frame_lock);
       }
-      exit(-100);
+      exit(-1);
   }
 
 
