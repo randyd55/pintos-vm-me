@@ -20,7 +20,7 @@
 //#include "page.h"
 
 
-#define NUM_FRAMES 1024
+#define NUM_FRAMES 1000
 struct frame
 {
 	void* phys_address; //starting address of the frame that this struct represents
