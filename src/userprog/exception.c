@@ -190,6 +190,32 @@ page_fault (struct intr_frame *f)
     }
 
   } else{
+
+    //we gotta do LRU & use timer.c to track the
+//time stamps of each frame an stuff
+//its 1:36am send help plz in stalling on another
+//project plz send help
+
+/*when we evict we gotta: take out the entry From the
+frame table so,  clear the page directory page
+
+maybe dont take it out of spt, bc the process shouldnt
+knwo we took it out...transparency and stuff??
+
+search swap for open spot, then write it
+maybe add a member to page, to knwo which
+sector in swap we moved it to, so when we need it list_push_back
+we can just go to the index and write it back to the frame (reclaim it)
+
+//we need to add a swap bit to the spt or frame table i think, to track which ones are in swap
+
+other notes: check the fault address if it is from a page we moved to swap or if it straight
+up dont exist, then just evict again i guess?????
+put the data from block back to frame_lock, then free that block bc we dont need the spot annymore
+
+its 2am help/ this will prob all be incoherent tmrw and thats fine
+
+
     // printf("Im a page faults bastard child\n\n");
       /*if(lock_held_by_current_thread(&filesys_lock))
 	       lock_release(&filesys_lock);

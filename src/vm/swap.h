@@ -7,9 +7,8 @@
 
 //};
 
-//static struct swap swp;
+static struct swap* swap_partition;
 size_t init_swap(size_t bit_cnt);
 
 
-#endif 
-
+#endif
