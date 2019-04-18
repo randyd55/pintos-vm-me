@@ -25,7 +25,7 @@
 #define NUM_FRAMES 992
 struct frame
 {
-	void* phys_address; //starting address of the frame that this struct represents
+	void* kpage; //starting address of the frame that this struct represents
 	struct thread* owner; //process that owns the memory in this frame, if any
 	struct sup_page* resident; //page that lives in this frame, if any
 };

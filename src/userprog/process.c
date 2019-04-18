@@ -39,6 +39,7 @@ and exit processes, as well as creating the stack
 #include "vm/frame.h"
 #include "vm/page.h"
 #include "threads/loader.h"
+#include "vm/swap.h"
 
 
 
@@ -54,6 +55,7 @@ static bool load (const char *cmdline, void (**eip) (void), void **esp);
 tid_t
 process_execute (const char *file_name)
 {
+  //printf("%s\n", "inside of process_execute");
   char *fn_copy = NULL;
   tid_t tid;
   char *save_ptr = NULL;
@@ -80,6 +82,7 @@ process_execute (const char *file_name)
   fn = strtok_r(fn_temp, " ", &save_ptr);
 
   /* Create a new thread to execute FILE_NAME. */
+  //printf("%s\n", "creating child thread");
   tid = thread_create (fn, PRI_DEFAULT, start_process, fn_copy);
 
 
@@ -88,11 +91,8 @@ process_execute (const char *file_name)
   if(t->load_status == false){ /*check if the child loaded properly*/
     return -1; //failed load
   }
-    printf("Test yeye 3\n\n\n");
-
   /* add the child thread to the list of child threads for this list*/
   list_push_front(&(t->children), &(getThreadByTID(tid)->child_elem));
-  printf("Test yeye 3\n\n\n");
 
   //Randy Done Driving
 
@@ -117,7 +117,7 @@ start_process (void *file_name_)
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
-  printf("buss down thotiana 2  \n\n\n\n\n");
+  //printf("inside of start_process\n");
   hash_init(&(thread_current()->spt), page_hash, page_less, NULL);
   success = load (file_name, &if_.eip, &if_.esp);
     //printf("Im alive\n\n");
@@ -134,11 +134,11 @@ start_process (void *file_name_)
   if (success){
     parent_thread->load_status = true;
     sema_up(&(parent_thread->exec_sema));
-    printf("Test yolo\n\n");
+    //printf("succeeded loading, starting process\n\n");
 
   } else {
       //  printf("Im alive\n\n");
-    printf("Test yeye \n\n\n");
+    //printf("failed loading, exiting now\n\n\n");
 
     parent_thread->load_status = false;
     sema_up(&(parent_thread->exec_sema));
@@ -316,7 +316,7 @@ bool
 load (const char *file_name, void (**eip) (void), void **esp)
 {
 
-  printf(" bus down thotiana \n\n\n\n");
+  //printf("top of load\n");
   //Chineye Driving
   struct thread *t = thread_current ();
   struct Elf32_Ehdr ehdr;
@@ -326,8 +326,10 @@ load (const char *file_name, void (**eip) (void), void **esp)
   int i;
   /* Allocate and activate page directory. */
   t->pagedir = pagedir_create ();
-  if (t->pagedir == NULL)
+  if (t->pagedir == NULL){
+    //printf("failing bc pagedir is null\n");
     goto done;
+  }
   process_activate ();
 
   /* Open executable file. */
@@ -353,6 +355,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   //Anthony Driving
 
   /*deny writes to the executable*/
+
   t->executable = file;
   file_deny_write(file);
 
@@ -375,12 +378,16 @@ load (const char *file_name, void (**eip) (void), void **esp)
     {
       struct Elf32_Phdr phdr;
 
-      if (file_ofs < 0 || file_ofs > file_length (file))
+      if (file_ofs < 0 || file_ofs > file_length (file)){
+        //printf("failing bc offset is less than 0/greater than file length\n");
         goto done;
+      }
       file_seek (file, file_ofs);
 
-      if (file_read (file, &phdr, sizeof phdr) != sizeof phdr)
+      if (file_read (file, &phdr, sizeof phdr) != sizeof phdr){
+        //printf("failing bc fileread\n");
         goto done;
+      }
       file_ofs += sizeof phdr;
       switch (phdr.p_type)
         {
@@ -394,6 +401,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
         case PT_DYNAMIC:
         case PT_INTERP:
         case PT_SHLIB:
+          //printf("failing bc idk\n");
           goto done;
         case PT_LOAD:
           if (validate_segment (&phdr, file))
@@ -418,12 +426,17 @@ load (const char *file_name, void (**eip) (void), void **esp)
                   read_bytes = 0;
                   zero_bytes = ROUND_UP (page_offset + phdr.p_memsz, PGSIZE);
                 }
+
               if (!load_segment (file, file_page, (void *) mem_page,
-                                 read_bytes, zero_bytes, writable))
-                goto done;
+                                 read_bytes, zero_bytes, writable)){
+                  //printf("failed loading segment\n");
+                  goto done;
+              }
             }
-          else
+          else{
+            //printf("failed validating segment \n");
             goto done;
+          }
           break;
         }
     }
@@ -433,19 +446,19 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
   /* Set up stack. */
   if (!setup_stack (esp, file_name)){
-    printf("(%s)\n", "rip stack");
+    //printf("(%s)\n", "rip stack");
     goto done;
   }
   /* Start address. */
   *eip = (void (*) (void)) ehdr.e_entry;
-
+  //printf("%s\n", "getting to success = true");
   success = true;
 
  done:
   /* We arrive here whether the load is successful or not. */
   palloc_free_page(fn_temp);
   lock_release(&filesys_lock);
-  printf("%d\n",success);
+  //printf("success: %d\n",success);
   return success;
 
   //Chineye Done
@@ -518,7 +531,7 @@ bool
 load_segment (struct file *file, off_t ofs, uint8_t *upage,
               uint32_t read_bytes, uint32_t zero_bytes, bool writable)
 {
-
+  //printf("Im a upage going into memory: %x\n\n", upage);
   ASSERT ((read_bytes + zero_bytes) % PGSIZE == 0);
   ASSERT (pg_ofs (upage) == 0);
   ASSERT (ofs % PGSIZE == 0);
@@ -529,10 +542,10 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       /* Calculate how to fill this page.
          We will read PAGE_READ_BYTES bytes from FILE
          and zero the final PAGE_ZERO_BYTES bytes. */
-      struct sup_page *sp = palloc_get_page(PAL_USER);
+      struct sup_page *sp = palloc_get_page(PAL_USER | PAL_ZERO);
 
       if(sp == NULL){
-          printf("Bad heap shit\n\n");
+          //printf("Bad heap shit\n\n");
           exit(-1);
       }
 
@@ -541,8 +554,8 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       struct thread *t = thread_current ();
       /* Get a page of memory. */
       if (page_zero_bytes == PGSIZE){
-
-        sp->all_zeros = true;
+        //printf("%s\n", "0 page added");
+        
 
         //check if already mapped 
         if(pagedir_get_page (t->pagedir, upage) != NULL){
@@ -551,8 +564,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
         }
         
         lock_acquire(&frame_lock);
-
-        sp->k_frame = palloc_get_page (PAL_USER);
+        sp->all_zeros = true;
         sp->swap_location = -1;
         sp->file_location = -1;
         sp->writable = writable;
@@ -568,7 +580,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
         uint8_t *kpage = palloc_get_page (PAL_USER | PAL_ZERO);
 
         if (kpage == NULL){
-          printf("%s\n", "kpage is null\n");
+          //printf("%s\n", "kpage is null\n");
           palloc_free_page (sp);
           return false;
         }
@@ -578,7 +590,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
           {
           palloc_free_page (kpage);
           palloc_free_page (sp);
-          printf("%s\n", "rip file read");
+          //printf("%s\n", "rip file read");
           return false;
           }
 
@@ -587,7 +599,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
         /* Add the page to the process's address space. */
         if (!install_page (upage, kpage, writable, sp))
           {
-            printf("%s\n", "rip install page");
+            //printf("%s\n", "rip install page");
             palloc_free_page (kpage);
             palloc_free_page (sp);
             return false;
@@ -602,7 +614,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 
       if (&(t->spt) == NULL){
 
-        printf("SPT null \n\n\n\n");
+        //printf("SPT null \n\n\n\n");
       }
 
 
@@ -830,22 +842,31 @@ install_page (void *upage, void *kpage, bool writable, struct sup_page *sp)
 
   return success;
 }
-
+//check for 0page case
+  //uint8_t *kpage = palloc_get_page (PAL_USER | PAL_ZERO);
 bool
 replace_page (struct frame *f, struct sup_page *new_sup_page){
   printf("Replace page\n\n");
-  pagedir_clear_page (f->owner->pagedir, f->resident->upage);
-  f->owner = thread_current();
-  uint8_t *kpage = palloc_get_page (PAL_USER | PAL_ZERO);
-  if(kpage != NULL){
-    f->resident->k_frame = NULL;
-    f->resident = new_sup_page;
-    new_sup_page->k_frame = f;
-  }
-  else{
-    exit(-1);
-  }
+  struct sup_page *old_sup_page = f->resident;
 
-  return pagedir_set_page (f->owner->pagedir, new_sup_page->upage, kpage, new_sup_page->writable);
+  //move to swap
+  int i;
+  void *to_write;
+  int swap_slot = get_open_swap_slot(&swap_partition);
+  for(i = 0; i < 8; i++)
+    block_write(&swap_partition, (swap_slot * 8) + i, old_sup_page->upage + i * (PGSIZE/8));
+  
+  old_sup_page->swap_location = swap_slot;
+  bitmap_mark (&swap_partition, swap_slot);
+  pagedir_clear_page (f->owner->pagedir, old_sup_page->upage);
+  old_sup_page->k_frame = NULL;
+  ;
+  //insert new page into frame
+  f->owner = thread_current();
+  f->resident = new_sup_page;
+  new_sup_page->k_frame = f;
+
+  return pagedir_set_page (f->owner->pagedir, new_sup_page->upage, f->kpage, new_sup_page->writable);
 
 }
+

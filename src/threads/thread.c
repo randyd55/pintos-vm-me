@@ -116,7 +116,7 @@ thread_start (void)
   struct semaphore idle_started;
   sema_init (&idle_started, 0);
   thread_create ("idle", PRI_MIN, idle, &idle_started);
-  if(init_swap(4) ==  NULL){
+  if(init_swap(1000) ==  NULL){
     exit(-1);
   }
   /* Start preemptive thread scheduling. */
@@ -214,7 +214,7 @@ thread_create (const char *name, int priority,
 
   /* Add to run queue. */
   thread_unblock (t);
-
+  //printf("%s\n", "successfully executed thread_create");
   return tid;
   //Chineye Done
 }

@@ -24,7 +24,7 @@ set_frame(struct frame* f,void* kpage, struct sup_page* sp){
   //   printf("AHHHHHHHHHH\n\n\n");
   // }
 
-  f->phys_address=kpage;
+  f->kpage=kpage;
   f->owner=thread_current();
   f->resident=sp; //Fix supplemental page table and implement
 

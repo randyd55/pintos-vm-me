@@ -171,6 +171,7 @@ pid_t
 exec (const char *cmd_line)
 {
   int e = process_execute(cmd_line);
+  //printf("%s\n", "do we get here");
   return e;
 }
 

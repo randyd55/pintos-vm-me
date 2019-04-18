@@ -174,29 +174,44 @@ page_fault (struct intr_frame *f)
      which fault_addr refers. */
   struct thread* t=thread_current();
   struct sup_page *p;
+  struct sup_page *sp;
+  bool success;
+  uint32_t addr;
+  uint8_t *kpage;
   p = page_lookup(fault_addr);
+  //printf("Fault address: %x\n\n", fault_addr);
+  //printf("P NULL?????? %d\n\n", p==NULL);
+  if(p!=NULL)
+    //printf("Sup page stuff: writable: %d, upage: %x, k_frame: %x, all_zeros: %d\n\n",p->writable, p->upage, p->k_frame, p->all_zeros);
   //uninstall();
   //remove_from_frame();
   if(get_open_frame()==-1 && p!=NULL){
+     //printf("%s\n", "page faulting, eviction");
      replace_page(evict_this_frame_in_particular(),p);
   }
-  else if(p == NULL){
-      uint8_t *kpage = palloc_get_page (PAL_USER | PAL_ZERO);
+  else if(p!=NULL && p->all_zeros == true){
+      //printf("%s\n", "page faulting, adding 0pg");
+      kpage = palloc_get_page (PAL_USER | PAL_ZERO);
+      //printf("after palloc_get_page\n");
       if (kpage == NULL){
+        //printf("%s\n", "kpage is null\n");
         exit(-1);
       }
       if (!install_page (p->upage, kpage, p->writable, p))
           {
+            //printf("%s\n", "failed installing the 0page");
             palloc_free_page (kpage);
             return false;
-          }
+      }
+      //printf("%s\n", "finished adding 0pgs");
   } 
   else if(write&&fault_addr>file_length(t->executable)*3000-(uint8_t)PHYS_BASE&&t->stack_pages<STACK_LIMIT){
-    //printf("Im a page fault\n\n");
+    //printf("page faulting, growing the stack\n");
+
     bool success;
-    uint32_t addr=((uint32_t)f->esp&(~PGMASK));
-    uint8_t *kpage = palloc_get_page (PAL_USER);
-    struct sup_page *sp = palloc_get_page(PAL_USER);
+    addr=((uint32_t)f->esp&(~PGMASK));
+    kpage = palloc_get_page (PAL_USER);
+    sp = palloc_get_page(PAL_USER);
     if (kpage != NULL && sp != NULL){
       success = install_page (((uint8_t *)PHYS_BASE-(t->stack_pages+1)*PGSIZE), kpage, true, sp);
       if(success)
@@ -204,7 +219,7 @@ page_fault (struct intr_frame *f)
     }
 
   } else{
-
+      //printf("Big if, write: %d, heuristic: %d, stack size: %d\n\n",write,fault_addr>file_length(t->executable)*3000-(uint8_t)PHYS_BASE,t->stack_pages<STACK_LIMIT);
     //we gotta do LRU & use timer.c to track the
 //time stamps of each frame an stuff
 //its 1:36am send help plz in stalling on another
@@ -217,7 +232,7 @@ maybe dont take it out of spt, bc the process shouldnt
 knwo we took it out...transparency and stuff??
 
 search swap for open spot, then write it
-maybe add a member to page, to knwo which
+maybe add a member to page, to know which
 sector in swap we moved it to, so when we need it list_push_back
 we can just go to the index and write it back to the frame (reclaim it)
 
@@ -235,13 +250,15 @@ its 2am help/ this will prob all be incoherent tmrw and thats fine
 	       lock_release(&filesys_lock);
       if(lock_held_by_current_thread(&frame_lock))
          lock_release(&frame_lock);*/
+    //printf("page faulting, exiting\n");
+
       if(lock_held_by_current_thread(&filesys_lock)){
          lock_release(&filesys_lock);
       }
       if(lock_held_by_current_thread(&frame_lock)){
          lock_release(&frame_lock);
       }
-      printf("I hate myself\n\n");
+      //printf("I hate myself\n\n");
       exit(-1);
   }
 
@@ -261,6 +278,6 @@ its 2am help/ this will prob all be incoherent tmrw and thats fine
 }
 struct frame*
 evict_this_frame_in_particular(){
-   printf("%s\n", "evicting");
+   //printf("%s\n", "evicting");
    return &frame_table[page_fault_cnt%NUM_FRAMES];
 }
