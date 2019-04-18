@@ -8,6 +8,7 @@ init_frame_table(){
   for(i=0; i<NUM_FRAMES; i++){
     frame_table[i] = NULL;
   }
+
   lock_init(&frame_lock);
 }
 
@@ -16,7 +17,6 @@ void
 set_frame(struct frame* f,void* kpage, struct sup_page* sp){
   int open_spot;
   if(kpage == NULL){
-    printf("%s\n", "asdf");
     exit(-1);
   }
 

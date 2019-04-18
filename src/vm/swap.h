@@ -3,11 +3,7 @@
 
 #include "bitmap.h"
 #include "devices/block.h"
-//struct swap{
-
-//};
-
-static struct swap* swap_partition;
+static struct bitmap* swap_spots;
 size_t init_swap(size_t bit_cnt);
 
 

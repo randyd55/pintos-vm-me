@@ -23,7 +23,7 @@ page_less (const struct hash_elem *a_, const struct hash_elem *b_,
   // if(a->upage != NULL){
   //   printf("AHHHHH \n\n\n\n\n");
   // }
-  return a->k_frame < b->k_frame;
+  return (int)a->upage < (int)b->upage;
 }
 
 /* Returns the page containing the given virtual address,

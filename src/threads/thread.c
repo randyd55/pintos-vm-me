@@ -14,6 +14,7 @@
 #include "threads/vaddr.h"
 #include "vm/frame.h"
 #include "vm/swap.h"
+#include "threads/loader.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -111,6 +112,7 @@ void
 thread_start (void)
 {
   /* Create the idle thread. */
+
   struct semaphore idle_started;
   sema_init (&idle_started, 0);
   thread_create ("idle", PRI_MIN, idle, &idle_started);
@@ -211,7 +213,6 @@ thread_create (const char *name, int priority,
   // hash_init(&(t->spt), page_hash, page_less, NULL);
 
   /* Add to run queue. */
-
   thread_unblock (t);
 
   return tid;
@@ -498,7 +499,7 @@ init_thread (struct thread *t, const char *name, int priority)
   t->magic = THREAD_MAGIC;
   t->exit_status = -1;
   t->fd = -1;
-  t->stack_pages=0;
+  t->stack_pages = 0;
   //initialize semaphores for syscall synchronization
   sema_init(&(t->child_exit_sema), 0);
   sema_init(&(t->parent_wait_sema), 0);

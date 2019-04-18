@@ -14,7 +14,7 @@ bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
                           bool writable);
 
 bool
-install_page (void *upage, void *kpage, bool writable);
+install_page (void *upage, void *kpage, bool writable, struct sup_page *sp);
 
 bool
 replace_page (struct frame *f, struct sup_page *new_sup_page);

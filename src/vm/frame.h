@@ -17,10 +17,12 @@
 */
 #include "threads/thread.h"
 #include "threads/synch.h"
+#include "threads/vaddr.h"
+#include "threads/loader.h"
 //#include "page.h"
 
 
-#define NUM_FRAMES 1000
+#define NUM_FRAMES 992
 struct frame
 {
 	void* phys_address; //starting address of the frame that this struct represents
