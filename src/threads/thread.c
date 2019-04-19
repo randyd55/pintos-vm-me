@@ -185,7 +185,7 @@ thread_create (const char *name, int priority,
   /* Initialize thread. */
   init_thread (t, name, priority);
   tid = t->tid = allocate_tid ();
-  t->pid=t->tid;
+  t->pid = t->tid;
 
   /* Stack frame for kernel_thread(). */
   kf = alloc_frame (t, sizeof *kf);
@@ -202,10 +202,10 @@ thread_create (const char *name, int priority,
   sf->eip = switch_entry;
   sf->ebp = 0;
   t->parent = thread_current();
-hash_init(&(t->spt), page_hash, page_less, NULL);
+  /* initializing the hash table for paging*/
+  hash_init(&(t->spt), page_hash, page_less, NULL);
 
   /* Add to run queue. */
-
   thread_unblock (t);
 
   return tid;
@@ -297,13 +297,15 @@ thread_exit (void)
   struct thread *t = thread_current();
   struct thread *c;
   sema_up(&(t->child_exit_sema));
+
   //block so wait can finish, unblock at the end of wait
   sema_down(&(t->parent_wait_sema));
   struct list_elem* e;
+
   //allows children to free their resources when it finishes by calling
   //up on their parent_wait semaphore
-  for(e=list_begin(&t->children); e!=list_end(&t->children); e=list_next(e)){
-    c=list_entry(e, struct thread, child_elem);
+  for(e = list_begin(&t->children); e != list_end(&t->children); e = list_next(e)){
+    c =list_entry(e, struct thread, child_elem);
     sema_up(&(c->parent_wait_sema));
   }
 
@@ -487,12 +489,13 @@ init_thread (struct thread *t, const char *name, int priority)
   memset (t, 0, sizeof *t);
   t->status = THREAD_BLOCKED;
   strlcpy (t->name, name, sizeof t->name);
-  t->stack = (uint8_t *) t + PGSIZE;
+  t->stack = (uint8_t *) /* The stack of the thread*/
   t->priority = priority;
   t->magic = THREAD_MAGIC;
   t->exit_status = -1;
   t->fd = -1;
-  t->stack_pages=0;
+  t->stack_pages = 0;
+
   //initialize semaphores for syscall synchronization
   sema_init(&(t->child_exit_sema), 0);
   sema_init(&(t->parent_wait_sema), 0);
