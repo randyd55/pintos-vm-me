@@ -14,6 +14,7 @@
 #include "vm/frame.h"
 #ifdef USERPROG
 #include "userprog/process.h"
+#include "userprog/syscall.h"
 #endif
 
 /* Random value for struct thread's `magic' member.
@@ -110,7 +111,7 @@ thread_start (void)
   struct semaphore idle_started;
   sema_init (&idle_started, 0);
   thread_create ("idle", PRI_MIN, idle, &idle_started);
-
+  //init swap here
   /* Start preemptive thread scheduling. */
   intr_enable ();
 
@@ -489,7 +490,7 @@ init_thread (struct thread *t, const char *name, int priority)
   memset (t, 0, sizeof *t);
   t->status = THREAD_BLOCKED;
   strlcpy (t->name, name, sizeof t->name);
-  t->stack = (uint8_t *) /* The stack of the thread*/
+  t->stack = (uint8_t *) t + PGSIZE; /* The stack of the thread*/
   t->priority = priority;
   t->magic = THREAD_MAGIC;
   t->exit_status = -1;

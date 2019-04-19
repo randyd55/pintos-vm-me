@@ -3,7 +3,7 @@
 //Chineye is driving
 #include "bitmap.h"
 #include "devices/block.h"
-
+#define SECTORS_PER_PAGE 8
 struct bitmap* swap_spots; //bitmap to indicate open spots in the swap
 struct block* swap_partition; //swap itself
 size_t init_swap(size_t bit_cnt); //initializes the swap
