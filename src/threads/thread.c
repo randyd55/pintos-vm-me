@@ -498,9 +498,6 @@ init_thread (struct thread *t, const char *name, int priority)
   sema_init(&(t->parent_wait_sema), 0);
   sema_init(&(t->exec_sema), 0);
   list_init(&(t->children));
-  //hash_init(&(t->spt), page_hash, page_less, NULL);
-
-
   old_level = intr_disable();
   list_push_back (&all_list, &t->allelem);
   intr_set_level(old_level);

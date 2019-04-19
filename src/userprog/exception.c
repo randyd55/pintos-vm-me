@@ -157,39 +157,29 @@ page_fault (struct intr_frame *f)
   //in the case of a page fault and these conditions, we simply exit with -1
   if(fault_addr==NULL||is_kernel_vaddr(fault_addr)||!is_user_vaddr(fault_addr))
     exit(-1);
-  /* To implement virtual memory, delete the rest of the function
-     body, and replace it with code that brings in the page to
-     which fault_addr refers. */
+  
   struct thread* t=thread_current();
-
-  
-  
-  if(write&&fault_addr>file_length(t->executable)*3000-(uint8_t)PHYS_BASE||t->stack_pages>NUM_FRAMES){
+  //check if we need to grow the stack
+  if(write&&fault_addr>file_length(t->executable)*3000-(uint8_t)PHYS_BASE||
+                                                  t->stack_pages>NUM_FRAMES){
     bool success;
     uint32_t addr=((uint32_t)f->esp&(~PGMASK));
     uint8_t *kpage = palloc_get_page (PAL_USER);
     if (kpage != NULL){
-      success = install_page (((uint8_t *)PHYS_BASE-(t->stack_pages+1)*PGSIZE), kpage, true);
+      success = install_page (((uint8_t *)PHYS_BASE-(t->stack_pages+1)*PGSIZE),
+                                                                  kpage, true);
       if(success)
         t->stack_pages++;
     } 
-  } else{
+  }
+  // 
+  else{
       if(lock_held_by_current_thread(&filesys_lock))
-	lock_release(&filesys_lock);
+	       lock_release(&filesys_lock);
+      if(lock_held_by_current_thread(&frame_lock))
+         lock_release(&filesys_lock);
       exit(-1);
   }
 
-  //printf("Did that stuff\n\n");
-  /*printf ("Page fault at %p: %s error %s page in %s context.\n",
-          fault_addr,
-          not_present ? "not present" : "rights violation",
-          write ? "writing" : "reading",
-
-          user ? "user" : "kernel");
-
-  printf("There is no crying in Pintos!\n");*/
-
-
-  //kill (f);
 }
 
