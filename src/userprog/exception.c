@@ -160,8 +160,10 @@ page_fault (struct intr_frame *f)
   
   struct thread* t=thread_current();
   //check if we need to grow the stack
-  if(write&&fault_addr>file_length(t->executable)*3000-(uint8_t)PHYS_BASE||
-                                                  t->stack_pages>NUM_FRAMES){
+  //must be a write, within the heuristic, and the number of stack pages must
+  //be less than the number of frames
+  if(write&&fault_addr>file_length(t->executable)*3000-(uint8_t)PHYS_BASE&&
+                                                  t->stack_pages<NUM_FRAMES){
     bool success;
     uint32_t addr=((uint32_t)f->esp&(~PGMASK));
     uint8_t *kpage = palloc_get_page (PAL_USER);
@@ -172,7 +174,7 @@ page_fault (struct intr_frame *f)
         t->stack_pages++;
     } 
   }
-  // 
+  //exit if the faulting address isn't valid/we don't grow the stack 
   else{
       if(lock_held_by_current_thread(&filesys_lock))
 	       lock_release(&filesys_lock);
