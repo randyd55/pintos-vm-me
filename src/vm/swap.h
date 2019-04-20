@@ -1,5 +1,15 @@
 #ifndef VM_SWAP_H
 #define VM_SWAP_H
+
+/*
+    swap.h initalizes the variables and functions utilized for 
+    page eviction to swap
+
+    Authors: Chineye, Randy, Anthony, Tim
+
+    Date: April 19th 2019
+*/
+
 //Chineye is driving
 #include "bitmap.h"
 #include "devices/block.h"

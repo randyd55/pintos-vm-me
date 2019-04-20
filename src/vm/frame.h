@@ -1,23 +1,12 @@
+
+
 #ifndef VM_FRAME_H
 #define VM_FRAME_H
 
-/*
-#include "threads/palloc.h"
-#include <stdio.h>
-#include <string.h>
-#include <bitmap.h>
-#include <debug.h>
-#include "threads/vaddr.h"
-
-#include "threads/pte.h"
-#include "userprog/process.h"
-#include "userprog/exception.h"
-#include "threads/init.h"
-#include "userprog/pagedir.h"
-*/
 #include "threads/thread.h"
 #include "threads/synch.h"
 
+/* frame.h declares the variabel and methods for the frame table and entires*/
 
 #define NUM_FRAMES 1024
 struct frame

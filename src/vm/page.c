@@ -1,3 +1,13 @@
+/*
+
+page.c assist in implementing the supplemental page table
+
+Authors: Chineye, Randy, Timothy, Anthony
+
+Date: April 18th 2019
+
+*/
+
 #include "page.h"
 #include "lib/kernel/bitmap.h"
 
