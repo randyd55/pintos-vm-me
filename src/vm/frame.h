@@ -19,10 +19,10 @@
 #include "threads/synch.h"
 
 
-#define NUM_FRAMES 1024
+#define NUM_FRAMES 992
 struct frame
 {
-	void* phys_address; //starting address of the kpage 
+	void* kpage; //starting address of the kpage 
 						//that this frame represents
 	struct thread* owner; //process that owns the memory in this frame, if any
 	struct sup_page* resident; //page that lives in this frame, if any

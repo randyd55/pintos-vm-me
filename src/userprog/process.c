@@ -118,6 +118,11 @@ start_process (void *file_name_)
 
 
   /* If load failed, quit. */
+  hash_init(&thread_current()->spt, page_hash, page_less, NULL);
+  if(init_swap(1000) == NULL){
+    printf("failed init swap\n");
+    exit(-1);
+  }
   palloc_free_page (file_name);
 
   //Tim Driving
@@ -510,6 +515,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
   ASSERT (ofs % PGSIZE == 0);
 
   file_seek (file, ofs);
+  off_t ofs_ = ofs;
   while (read_bytes > 0 || zero_bytes > 0)
     {
       /* Calculate how to fill this page.
@@ -517,22 +523,33 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
          and zero the final PAGE_ZERO_BYTES bytes. */
       size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
+      struct sup_page *sp = (struct sup_page *)malloc(sizeof(struct sup_page));
+      sp -> swap_location = -1;
+      sp -> file = file;
+      sp -> writable = writable;
+      sp -> upage = upage;
+      sp -> allocated = false;
+      sp -> page_read_bytes = page_read_bytes;
+      sp -> file = file;
+      sp -> file_offset = ofs_;
+      hash_insert(&thread_current()->spt, &sp->hash_elem);
 
+      //printf("%d  page_read_bytes: %d\n\n", NULL==hash_find(&(thread_current()->spt), &sp.hash_elem), page_read_bytes);
       /* Get a page of memory. */
-      uint8_t *kpage = palloc_get_page (PAL_USER | PAL_ZERO);
+      /*uint8_t *kpage = palloc_get_page (PAL_USER | PAL_ZERO);
       if (kpage == NULL)
-        return false;
+        return false;*/
 
       /* Load this page. */
-      if (file_read (file, kpage, page_read_bytes) != (int) page_read_bytes)
+      /*if (file_read (file, kpage, page_read_bytes) != (int) page_read_bytes)
         {
           palloc_free_page (kpage);
           return false;
         }
-      memset (kpage + page_read_bytes, 0, page_zero_bytes);
+      memset (kpage + page_read_bytes, 0, page_zero_bytes);*/
 
       /* Add the page to the process's address space. */
-      if (!install_page (upage, kpage, writable))
+      /*if (!install_page (upage, kpage, writable))
         {
           palloc_free_page (kpage);
           return false;
@@ -543,11 +560,12 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       p.swap_location = -1;
       p.file_location = -1;
       p.writable = writable;
-      lock_release(&frame_lock);
+      lock_release(&frame_lock);*/
       /* Advance. */
       read_bytes -= page_read_bytes;
       zero_bytes -= page_zero_bytes;
       upage += PGSIZE;
+      ofs_ += page_read_bytes;
       //printf("%d\n", writable);
     }
   return true;

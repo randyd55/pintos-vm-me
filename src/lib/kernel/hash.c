@@ -272,8 +272,9 @@ hash_bytes (const void *buf_, size_t size)
   ASSERT (buf != NULL);
 
   hash = FNV_32_BASIS;
-  while (size-- > 0)
+  while (size-- > 0){
     hash = (hash * FNV_32_PRIME) ^ *buf++;
+  }
 
   return hash;
 } 

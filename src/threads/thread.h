@@ -112,7 +112,7 @@ struct thread
     struct semaphore child_exit_sema; //sema waiting on child to call exit
     struct semaphore parent_wait_sema; //sema waiting on parent to call wait 
     struct semaphore exec_sema; //sema for loading properly
-
+    struct lock spt_lock;
     struct list_elem child_elem; //elem for children list
     struct list children; // list of children the thread has
     int stack_pages; /* stack pages of the thread*/

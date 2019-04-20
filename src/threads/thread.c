@@ -204,7 +204,6 @@ thread_create (const char *name, int priority,
   sf->ebp = 0;
   t->parent = thread_current();
   /* initializing the hash table for paging*/
-  hash_init(&(t->spt), page_hash, page_less, NULL);
 
   /* Add to run queue. */
   thread_unblock (t);
@@ -501,6 +500,7 @@ init_thread (struct thread *t, const char *name, int priority)
   sema_init(&(t->child_exit_sema), 0);
   sema_init(&(t->parent_wait_sema), 0);
   sema_init(&(t->exec_sema), 0);
+  lock_init(&(t->spt_lock));
   list_init(&(t->children));
   old_level = intr_disable();
   list_push_back (&all_list, &t->allelem);

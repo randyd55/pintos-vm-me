@@ -154,15 +154,50 @@ page_fault (struct intr_frame *f)
   not_present = (f->error_code & PF_P) == 0;
   write = (f->error_code & PF_W) != 0;
   user = (f->error_code & PF_U) != 0;
+
   //in the case of a page fault and these conditions, we simply exit with -1
   if(fault_addr==NULL||is_kernel_vaddr(fault_addr)||!is_user_vaddr(fault_addr))
     exit(-1);
-  
+
   struct thread* t=thread_current();
   //check if we need to grow the stack
   //must be a write, within the heuristic, and the number of stack pages must
   //be less than the number of frames
-  if(write&&fault_addr>file_length(t->executable)*3000-(uint8_t)PHYS_BASE&&
+  struct sup_page *p;
+  p = page_lookup(fault_addr);
+  int open_spot;
+  open_spot = get_open_frame();
+  if(open_spot == -1){
+    //write to swap
+  }
+  if(p != NULL){
+    //printf("%d  page_read_bytes: %d\n\n", NULL==hash_find(&(thread_current()->spt), &sp.hash_elem), page_read_bytes);
+      /* Get a page of memory. */
+    printf("asdfjsaldfaweojfojsflwaoefodj");
+      file_seek (p->file, p->file_offset);
+      uint8_t *kpage = palloc_get_page (PAL_USER | PAL_ZERO);
+      if (kpage == NULL)
+        exit(-1); //shouldn't get here
+
+      /* Load this page. */
+      if (file_read (p->file, kpage, p->page_read_bytes) != (int) p->page_read_bytes)
+        {
+          palloc_free_page (kpage);
+          return false;
+        }
+      memset(kpage + p->page_read_bytes, 0, PGSIZE - p->page_read_bytes);
+
+      /* Add the page to the process's address space. */
+      if (!install_page (p->upage, kpage, p->writable))
+        {
+          palloc_free_page (kpage);
+          exit(-1);
+        }
+      set_frame(kpage, open_spot, p->upage);
+      
+
+  }
+  else if(write&&fault_addr>file_length(t->executable)*3000-(uint8_t)PHYS_BASE&&
                                                   t->stack_pages<NUM_FRAMES){
     bool success;
     uint32_t addr=((uint32_t)f->esp&(~PGMASK));
@@ -180,7 +215,9 @@ page_fault (struct intr_frame *f)
 	       lock_release(&filesys_lock);
       if(lock_held_by_current_thread(&frame_lock))
          lock_release(&filesys_lock);
+      printf("%s\n", "memory exception, now exiting\n");
       exit(-1);
+
   }
 
 }
