@@ -159,10 +159,8 @@ page_fault (struct intr_frame *f)
   user = (f->error_code & PF_U) != 0;
 
   //in the case of a page fault and these conditions, we simply exit with -1
-  if(fault_addr==NULL||is_kernel_vaddr(fault_addr)||!is_user_vaddr(fault_addr)){
-
-  
-  struct hash_iterator i;
+  if(fault_addr==NULL||is_kernel_vaddr(fault_addr)||!is_user_vaddr(fault_addr))
+  {
     exit(-1);
   }
 
@@ -194,8 +192,9 @@ page_fault (struct intr_frame *f)
   //must be a write, within the heuristic, and the number of stack pages must
   //be less than the number of frames
   else if(p==NULL&&write&&
-    fault_addr>file_length(t->executable)*HEURISTIC-(uint8_t)PHYS_BASE&&
-    t->stack_pages<NUM_FRAMES){
+    fault_addr < (uint8_t)PHYS_BASE - t->stack_pages * PGSIZE - 
+      sizeof(void *) && t->stack_pages<NUM_FRAMES){
+
     insert_into_stack(kpage);
  
   }
@@ -216,7 +215,7 @@ evict_to_swap(){
   int i;
   void*to_write;
 
-  //Get frame you want to evict
+  //Get frame for eviction
   eviction_spot = evict_this_frame_in_particular();
   swap_slot = get_open_swap_slot(swap_spots);
   fr = frame_table[eviction_spot];
@@ -224,7 +223,6 @@ evict_to_swap(){
 
   //Ensure swap isnt full
   if(swap_slot == BITMAP_ERROR){
-    printf("swap full \n");
     exit(-1);
   }
 
@@ -234,6 +232,9 @@ evict_to_swap(){
     offset = i * (BLOCK_SECTOR_SIZE);
     void * buf;
     buf = malloc(BLOCK_SECTOR_SIZE);
+    if(buf == NULL){
+      exit(-1);
+    }
     memcpy(buf, fr->kpage + offset, BLOCK_SECTOR_SIZE);
     block_write(swap_partition, (swap_slot * SECTORS_PER_PAGE) + i, buf);
     free(buf);
@@ -289,12 +290,14 @@ void
 insert_from_swap(uint8_t* kpage, struct sup_page* p){
   struct frame *fr;
   fr= malloc(sizeof(struct frame));
+  if(fr == NULL){
+    exit(-1);
+  }
   if (kpage == NULL)
   {
-      printf("kpage null?\n\n");
       exit(-1);
   }
-  //Get page from swap
+  //Reads page from swap
   int i;
   for(i = 0; i < SECTORS_PER_PAGE; i++)
   {
@@ -302,7 +305,9 @@ insert_from_swap(uint8_t* kpage, struct sup_page* p){
     offset = i * (BLOCK_SECTOR_SIZE);
     void * buf;
     buf = malloc(BLOCK_SECTOR_SIZE);
-    
+    if(buf == NULL){
+      exit(-1);
+    }
     block_read(swap_partition, 
       (p->swap_location * SECTORS_PER_PAGE) + i, buf);
     memcpy(kpage + offset, buf, BLOCK_SECTOR_SIZE);
@@ -313,7 +318,6 @@ insert_from_swap(uint8_t* kpage, struct sup_page* p){
   if (!install_page (p->upage, kpage, p->writable))
   {
     palloc_free_page (kpage);
-    printf("install page failed \n\n");
     exit(-1);
   }
   set_frame(fr, kpage, p);
@@ -326,6 +330,8 @@ insert_from_filesys(uint8_t* kpage, struct sup_page* p){
   //Initialize frame
   struct frame *fr;
   fr = malloc(sizeof(struct frame));
+  if(fr == NULL)
+    exit(-1);
   file_seek (p->file, p->file_offset);
 
   //Check that kpage isnt null
@@ -338,7 +344,6 @@ insert_from_filesys(uint8_t* kpage, struct sup_page* p){
     p->page_read_bytes) != (int) p->page_read_bytes)
     {
       palloc_free_page (kpage);
-      printf("file_read failed\n\n");
       exit(-1);
     }
   memset(kpage + p->page_read_bytes, 0, PGSIZE - p->page_read_bytes);

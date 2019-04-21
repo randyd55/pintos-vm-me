@@ -537,39 +537,11 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       hash_insert(&thread_current()->spt, &sp->hash_elem);
       lock_release(&frame_lock);
 
-      //printf("%d  page_read_bytes: %d\n\n", NULL==hash_find(&(thread_current()->spt), &sp.hash_elem), page_read_bytes);
-      /* Get a page of memory. */
-      /*uint8_t *kpage = palloc_get_page (PAL_USER | PAL_ZERO);
-      if (kpage == NULL)
-        return false;*/
-
-      /* Load this page. */
-      /*if (file_read (file, kpage, page_read_bytes) != (int) page_read_bytes)
-        {
-          palloc_free_page (kpage);
-          return false;
-        }
-      memset (kpage + page_read_bytes, 0, page_zero_bytes);*/
-
-      /* Add the page to the process's address space. */
-      /*if (!install_page (upage, kpage, writable))
-        {
-          palloc_free_page (kpage);
-          return false;
-        }
-      lock_acquire(&frame_lock);
-      set_frame(&f,kpage);
-      p.k_frame = &f;
-      p.swap_location = -1;
-      p.file_location = -1;
-      p.writable = writable;
-      lock_release(&frame_lock);*/
       /* Advance. */
       read_bytes -= page_read_bytes;
       zero_bytes -= page_zero_bytes;
       upage += PGSIZE;
       ofs_ += page_read_bytes;
-      //printf("%d\n", writable);
     }
   return true;
 }
@@ -597,6 +569,9 @@ setup_stack (void **esp, const char *file_name)
   //Anthony Driving
   struct frame *fr=(struct frame*)malloc(sizeof(struct frame));
   struct sup_page *sp = (struct sup_page *)malloc(sizeof(struct sup_page));
+  if(fr == NULL || sp == NULL){
+    exit(-1);
+  }
   set_frame(fr,kpage,sp);
   sp -> swap_location = -1;
   sp -> file = NULL;
@@ -646,7 +621,7 @@ setup_stack (void **esp, const char *file_name)
         my_esp -= strlen(argv[i]) + 1;
 
         /*check for overflow*/
-        if((int) my_esp < PHYS_BASE - 4096){
+        if((int) my_esp < PHYS_BASE - PGSIZE){
           palloc_free_page (kpage);
           palloc_free_page(temp_fn);
           palloc_free_page(argv);
@@ -661,7 +636,7 @@ setup_stack (void **esp, const char *file_name)
       while((int) my_esp % 4 != 0){
         my_esp -= 1;
         /*check for overflow*/
-        if((int) my_esp < PHYS_BASE - 4096){
+        if((int) my_esp < PHYS_BASE - PGSIZE){
           palloc_free_page (kpage);
           palloc_free_page(temp_fn);
           palloc_free_page(argv);
@@ -673,7 +648,7 @@ setup_stack (void **esp, const char *file_name)
       my_esp -= sizeof(char*); //null sentinel
 
       /*check for overflow*/
-      if((int) my_esp < PHYS_BASE - 4096){
+      if((int) my_esp < PHYS_BASE - PGSIZE){
         palloc_free_page (kpage);
         palloc_free_page(temp_fn);
         palloc_free_page(argv);
@@ -684,7 +659,7 @@ setup_stack (void **esp, const char *file_name)
       for(; i >= 0; i--){
         my_esp -= sizeof(char *);
         /*check for overflow*/
-        if((int) my_esp < PHYS_BASE - 4096){
+        if((int) my_esp < PHYS_BASE - PGSIZE){
           palloc_free_page (kpage);
           palloc_free_page(temp_fn);
           palloc_free_page(argv);
@@ -697,7 +672,7 @@ setup_stack (void **esp, const char *file_name)
       //Push address of argv onto stack
       my_esp -= sizeof(char **);
       /*check for overflow*/
-      if((int) my_esp < PHYS_BASE - 4096){
+      if((int) my_esp < PHYS_BASE - PGSIZE){
         palloc_free_page (kpage);
         palloc_free_page(temp_fn);
         palloc_free_page(argv);
@@ -710,7 +685,7 @@ setup_stack (void **esp, const char *file_name)
       my_esp -= sizeof(int);
 
       /*check for overflow*/
-      if((int) my_esp < PHYS_BASE - 4096){
+      if((int) my_esp < PHYS_BASE - PGSIZE){
         palloc_free_page (kpage);
         palloc_free_page(temp_fn);
         palloc_free_page(argv);
@@ -722,7 +697,7 @@ setup_stack (void **esp, const char *file_name)
       my_esp -= sizeof(int);
 
       /*check for overflow*/
-      if((int) my_esp < PHYS_BASE - 4096){
+      if((int) my_esp < PHYS_BASE - PGSIZE){
         palloc_free_page (kpage);
         palloc_free_page(temp_fn);
         palloc_free_page(argv);

@@ -14,4 +14,16 @@ bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
 
 bool
 install_page (void *upage, void *kpage, bool writable);
+
+void
+insert_from_filesys(uint8_t* kpage, struct sup_page* p);
+
+void
+insert_from_swap(uint8_t* kpage, struct sup_page* p);
+
+void
+insert_into_stack(uint8_t* kpage);
+
+void
+evict_to_swap();
 #endif /* userprog/process.h */
