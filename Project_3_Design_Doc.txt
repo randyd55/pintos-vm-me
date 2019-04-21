@@ -1,0 +1,363 @@
+                    +---------------------------+
+                    |           CS 439          |
+                    | PROJECT 3: VIRTUAL MEMORY |
+                    |      DESIGN DOCUMENT      |
+                    +---------------------------+
+
+
+
+
+The questions in this design document should reflect the design of the code you
+wrote for the project.  Your grade will reflect both the quality of your answer
+in this document and the quality of the design implementation in your code.  You
+may receive partial credit for answering questions for parts of the project that
+you did not get to implement, but you must indicate in your answer that there is
+no corresponding implementation, or you will not receive any credit.
+
+
+For each question, you should include both the name of the file(s), function
+name(s), and the line numbers where the relevant code may be found.
+
+
+These design documents should be completed individually.  Group members are
+welcome to use this document as a guide for design and are welcome to discuss
+the questions, but there should be no group notes or other sorts of copying of
+design documents.
+
+
+When you have completed your design document, submit it to the Canvas assignment
+Project 3 Design and Documentation.  ***Your submission must be a text file and
+each line must not extend past 80 characters.  In addition, your submission must
+contain all of the original material and not exceed 25,000 characters.  The
+character count will be measured using the Linux command wc.  (Note that rtf
+files are NOT text files.)
+
+
+
+
+---- Name ----
+
+
+>> Fill your name, UT EID, CS login, email address, and unique number:
+
+
+Name:   Anthony Moeller
+EID:    ajm6396
+CS login:   ajm6396
+Email:  anthonyjmoeller@gmail.com
+Unique Number: 50940
+
+
+
+
+Slip days used on this project: 2
+
+
+---- GROUP ----
+
+
+>> Fill the names, UT EIDs, CS logins, email addresses, and unique numbers
+>> of your group members.  Also fill in each person's ranking on the 
+>> partner evaluation scale, as determined by you.
+
+
+Name1:  Timothy Gan
+EID1:   thg358
+CS login:   timothyg
+Email:  timothygan@utexas.edu
+Unique Number:  50935
+Ranking (scale below):  Excellent
+
+
+Name2:  Chineye Emeghara
+EID2:   ce8894
+CS login:   chineye
+Email:  chineye.emeghara@utexas.edu
+Unique Number:  50945
+Ranking (scale below):  Very Good
+
+
+Name3:  Randy Donaldson
+EID2:   rgd546
+CS login:   randyd55
+Email:  randyd554@gmail.com
+Unique Number:  50935
+Ranking (scale below): Satisfactory
+
+
+
+
+---- PARTNER EVALUATION SCALE ----
+
+
+>> Excellent: Consistently went above and beyond - tutored others, carried
+>> more than his/her fair share of the load.
+
+
+>> Very Good: Consistently did what he/she was supposed to do, very well
+>> prepared and cooperative.
+
+
+>> Satisfactory: Usually did what he/she was supposed to do, minimally
+>> prepared and cooperative.
+
+
+>> Marginal: Sometimes failed to show up and/or rarely prepared.
+
+
+>> Deficient: Often failed to show up and/or rarely prepared.
+
+
+>> Unsatisfactory: Consistently failed to show up and/or unprepared.
+
+
+>> Superficial: Practically no participation.
+
+
+>> No Show: No participation at all.
+
+
+
+
+---- PRELIMINARIES ----
+
+
+>> If you have any preliminary comments on your submission or notes for the
+>> TAs, please give them here.
+
+
+>> Please cite any offline or online sources you consulted while
+>> preparing your submission, other than the Pintos documentation, course
+>> text, lecture notes, and course staff.
+
+
+                        PAGE TABLE MANAGEMENT
+                        =====================
+
+
+---- DATA STRUCTURES ----
+
+
+>> A1: Copy here the declaration of each new or changed `struct' or
+>> `struct' member, global or static variable, `typedef', ‘#define’, or
+>> enumeration that was necessary for your page table implementation.
+>> (Your frame table information should go in B1.)  
+>> Identify the purpose of each in 25 words or less.
+
+#define NUM_FRAMES 366 //Num frames in frame table
+
+struct frame *frame_table[NUM_FRAMES]; //array that represents the frame_table
+struct lock frame_lock; //lock when accessing frame table
+
+struct frame
+{
+	void* kpage; //starting address of the kpage stored by frame
+	struct thread* owner; //thread that owns/uses the frame, if any
+	struct sup_page* resident; //page that lives in this frame, if any
+}
+
+struct sup_page{
+	void *k_frame; 	//points to the frame the page is loaded in, 
+					//NULL if not loaded in
+	void *upage;    //Upage linked to by the pagedir
+	size_t swap_location; //location in swap, -1 if not 
+	struct file * file; //location in file_system, -1 if not
+	off_t file_offset; //offset in file
+	int writable; //indicates if page is writable
+	struct hash_elem hash_elem; //elem for hash table
+	int page_read_bytes; 
+	bool allocated; //true if allocated, false otherwise
+}
+
+struct thread {
+    int stack_pages;  //number of stack pages in thread
+    struct hash spt;  //supplemental page table
+}
+
+---- ALGORITHMS ----
+
+
+>> A2: Describe your code for locating the necessary data when a 
+>> process page faults in the code segment.  
+
+When a process page faults, the faulting address is passed to a
+page lookup method <exception.c, 172; page.c, 29> which then 
+finds the faulting address' expected page in a hash table
+<page.c, 36>, the page can be assured to be in the hash table
+as all necessary supplemental pages are loaded into the hash table
+in load_segment <process.c, 537> including all pages which would
+be lazy loaded
+
+>> A3: How does your code coordinate accessed and dirty bits between
+>> kernel and user virtual addresses that are aliases for the same
+>> frame, or alternatively how do you avoid the issue?
+
+
+---- SYNCHRONIZATION ----
+
+
+>> A4: When two user processes both need a new frame at the same time,
+>> how are races avoided?
+
+We have a frame lock <frame.h, 35> which surrounds the bulk of 
+frame table operations <exception.c, 177,205>, this prevents more
+than one process from accessing the frame table at any given time
+
+
+---- RATIONALE ----
+
+
+>> A5: Why did you choose the data structure(s) that you did for
+>> storing any supplemental page information?  Please compare to
+>> an alternative data structure.
+
+Our hash table implementation seemed quite useful to easily store
+as many supplemental pages as the process would've needed, alongside
+the ability to index into the table so that searching through a list
+could be avoided, it also prevented a possible size cap on the page table
+that wouldve arisen from using an array. The hash table came with quite a 
+bit of overhead on the implementation end however, and we did not have
+enough time to debug the memory freeing of each supplemental page table
+as a process finished
+
+
+                       PAGING TO AND FROM DISK
+                       =======================
+
+
+---- DATA STRUCTURES ----
+
+
+>> B1: Copy here the declaration of each new or changed `struct' or
+>> `struct' member, global or static variable, `typedef', ‘#define’, or
+>> enumeration that was necessary for your frame and swap implementations.  
+>> Identify the purpose of each in 25 words or less.
+
+
+#define SECTORS_PER_PAGE 8 //Sectors per page to avoid magic nums
+struct bitmap* swap_spots; //bitmap to indicate open spots in the swap
+struct block* swap_partition; //swap itself
+
+
+---- ALGORITHMS ----
+
+
+>> B2: When a frame is required but none are free, some frame must be
+>> evicted.  Describe your algorithm for choosing a frame to evict.
+
+We didn't have time to flesh out a proper eviction system for our 
+frame table, we had planned to implement a basic clock algorithm after
+paging worked reliably. While we we're trying to implement paging, 
+we settled for simply evicting a single arbitrary frame in 
+evict_this_frame_in_particular() <frame.c, 82>
+
+
+>> B3: When a process P obtains a frame that was previously used by a
+>> process Q, how do you adjust the page table (and any other data
+>> structures) to reflect that Q no longer has the frame?
+
+Our page fault handler has 4 primary operations <exception.c, 180>
+one of which is eviction. The supplemental page of that particular
+frame is grabbed <exception.c, 222> and the pointer from the supplemental
+page to the frame is later set to NULL after the frame is cleared for use
+by another page <exception.c, 251>. That frame struct is then deleted and 
+freed <exception.c, 250,252>
+
+
+>> B4: Explain your heuristic for deciding whether or not  page fault 
+>> for an invalid virtual address should cause the stack to be extended.
+
+Our heuristic was based on value of the faulting address its relation
+to the current length of the stack, particularly if the faulting
+address was below the current stack with an appended void pointer
+<exception.c, 195,196>
+
+
+
+---- SYNCHRONIZATION ----
+
+
+>> B5: Explain the basics of how you managed synchronization in your VM
+>> design.  In particular, explain how it prevents deadlock. 
+
+Our design avoids deadlock by 
+
+>> B6: A page fault in process P can cause another process Q's frame
+>> to be evicted.  How do you ensure that Q cannot access or modify
+>> the page during the eviction process?  How do you avoid a race
+>> between P evicting Q's frame and Q faulting the page back in?
+
+Because our eviction method <exception.c, 210> is nested in our
+frame lock, only one thread can do any of our page fault handler's
+4 main functions at any given time(evict to swap, import from swap
+,import from filesys, and create on stack). Because of this, only
+one thread can operate among those functions at any given time.
+Because of this, eviction and importation are not possible 
+simultaneously
+
+>> B7: Suppose a page fault in process P causes a page to be read from
+>> the filesystem or swap.  How do you ensure that a second process Q
+>> cannot interfere by, for example, attempting to evict the frame while it is
+>> still being read in?
+
+Both of our methods for bringing in pages from the filesystem and from swap
+<exception.c, 290, 329> are called only in the context of our frame lock,
+allowing only one process to access those operations at a time.
+
+
+>> B8: Explain how you handle access to paged-out pages that occur
+>> during system calls.  Do you use page faults to bring in pages (as
+>> in user programs), or do you have a mechanism for "locking" frames
+>> into physical memory, or do you use some other design?  If your method
+>>could result in potential deadlock, how do you prevent it?  
+
+
+
+
+---- RATIONALE ----
+
+
+>> B9: A single lock for the whole VM system would make
+>> synchronization easy but limit parallelism.  On the other hand,
+>> using many locks complicates synchronization and raises the
+>> possibility for deadlock but allows for high parallelism.  Explain
+>> where your design falls along this continuum and why you chose to
+>> design it this way.
+
+Our design had a single lock across the vast majority of our virtual
+memory handling <exception.c, 177,205>, while it was certainly more
+than was absolutely necessary, we hadn't finalized paging, after which
+we would've worked on arranging locks around only the essential
+globally accessed data structures such as the frame table and disk.
+
+
+
+                           SURVEY QUESTIONS
+                           ================
+
+
+Answering these questions is optional, but it will help us improve the
+course in future quarters.  Feel free to tell us anything you
+want--these questions are just to spur your thoughts.  You may also
+choose to respond anonymously in the course evaluations at the end of
+the semester.
+
+
+>> In your opinion, was this assignment, or any one of the problems
+>> in it, too easy or too hard?  Did it take too long or too little time?
+
+
+>> Did you find that working on a particular part of the assignment gave
+>> you greater insight into some aspect of OS design?
+
+
+>> Is there some particular fact or hint we should give students in
+>> future quarters to help them solve the problems?  Conversely, did you
+>> find any of our guidance to be misleading?
+
+
+>> Do you have any suggestions for the TAs to more effectively assist
+>> students, either for future quarters or the remaining projects?
+
+
+>> Any other comments?
