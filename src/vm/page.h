@@ -32,5 +32,7 @@ page_less (const struct hash_elem *a_, const struct hash_elem *b_,
 struct sup_page *
 page_lookup (const void *address);
 
+void
+destroy_spt(struct hash_elem *p, void* aux);
 #endif 
 

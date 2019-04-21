@@ -198,7 +198,6 @@ process_exit (void)
 {
   struct thread *cur = thread_current ();
   uint32_t *pd;
-
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
   pd = cur->pagedir;
@@ -508,8 +507,6 @@ bool
 load_segment (struct file *file, off_t ofs, uint8_t *upage,
               uint32_t read_bytes, uint32_t zero_bytes, bool writable)
 {
-  struct frame f = {NULL, NULL, NULL};
-  struct sup_page p = {NULL, NULL, NULL};
   
   ASSERT ((read_bytes + zero_bytes) % PGSIZE == 0);
   ASSERT (pg_ofs (upage) == 0);
@@ -522,10 +519,12 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       /* Calculate how to fill this page.
          We will read PAGE_READ_BYTES bytes from FILE
          and zero the final PAGE_ZERO_BYTES bytes. */
-
+      lock_acquire(&frame_lock);
       size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
       struct sup_page *sp = (struct sup_page *)malloc(sizeof(struct sup_page));
+      if(sp == NULL)
+        exit(-1);
       sp -> swap_location = -1;
       sp -> file = file;
       sp -> writable = writable;
@@ -535,6 +534,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       sp -> file = file;
       sp -> file_offset = ofs_;
       hash_insert(&thread_current()->spt, &sp->hash_elem);
+      lock_release(&frame_lock);
 
       //printf("%d  page_read_bytes: %d\n\n", NULL==hash_find(&(thread_current()->spt), &sp.hash_elem), page_read_bytes);
       /* Get a page of memory. */
@@ -592,8 +592,18 @@ setup_stack (void **esp, const char *file_name)
   char** argv;
   int argc, i;
 
-  //Anthony Driving
   kpage = palloc_get_page (PAL_USER | PAL_ZERO);
+  //Anthony Driving
+  struct frame *fr=(struct frame*)malloc(sizeof(struct frame));
+  struct sup_page *sp = (struct sup_page *)malloc(sizeof(struct sup_page));
+  set_frame(fr,kpage,sp);
+  sp -> swap_location = -1;
+  sp -> file = NULL;
+  sp -> writable = true;
+  sp -> upage = ((uint8_t *) PHYS_BASE) - PGSIZE;
+
+  hash_insert(&thread_current()->spt, &sp->hash_elem);
+
   if (kpage != NULL){
 
     success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);

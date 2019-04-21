@@ -15,6 +15,7 @@
 #ifdef USERPROG
 #include "userprog/process.h"
 #include "userprog/syscall.h"
+#include "vm/page.h"
 #endif
 
 /* Random value for struct thread's `magic' member.
@@ -309,6 +310,7 @@ thread_exit (void)
     c =list_entry(e, struct thread, child_elem);
     sema_up(&(c->parent_wait_sema));
   }
+  //hash_clear(&thread_current()->spt,destroy_spt);
 
 #ifdef USERPROG
   process_exit ();

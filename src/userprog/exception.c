@@ -159,56 +159,56 @@ page_fault (struct intr_frame *f)
   user = (f->error_code & PF_U) != 0;
 
   //in the case of a page fault and these conditions, we simply exit with -1
-  //printf("fault-addr: %x\n\n", fault_addr);
   if(fault_addr==NULL||is_kernel_vaddr(fault_addr)||!is_user_vaddr(fault_addr)){
 
   
   struct hash_iterator i;
-    //printf("Bad address: %x\n",fault_addr);
     exit(-1);
   }
 
   struct thread* t=thread_current();
-  //check if we need to grow the stack
-  //must be a write, within the heuristic, and the number of stack pages must
-  //be less than the number of frames
   struct sup_page *p;
+  int open_spot;
+
+  //Find page for demand paging
   p = page_lookup(fault_addr);
   
-  int open_spot;
   open_spot = get_open_frame();
   uint8_t *kpage = palloc_get_page (PAL_USER | PAL_ZERO);
+
   lock_acquire(&frame_lock);
+
+  //Evict Page
   if(open_spot==-1 && p != NULL){
-    //printf("Evict\n");
     evict_to_swap();
   }
+  //Import from filesys
   else if(p != NULL && p->swap_location == -1){
-    //printf("Filesys import\n");
     insert_from_filesys(kpage,p);
   }
+  //Import from swap
   else if(p != NULL){
-    //printf("Swap import\n");
     insert_from_swap(kpage,p);
   }
-  else if(write&&fault_addr>file_length(t->executable)*3000-(uint8_t)PHYS_BASE&&
-                                                  t->stack_pages<NUM_FRAMES){
-    p=malloc(sizeof(struct sup_page));
-    //printf("Stack export\n");
-    insert_into_stack(kpage,p);
+  //Create page for stack
+  //must be a write, within the heuristic, and the number of stack pages must
+  //be less than the number of frames
+  else if(p==NULL&&write&&
+    fault_addr>file_length(t->executable)*HEURISTIC-(uint8_t)PHYS_BASE&&
+    t->stack_pages<NUM_FRAMES){
+    insert_into_stack(kpage);
  
   }
   //exit if the faulting address isn't valid/we don't grow the stack 
   else{
-      if(lock_held_by_current_thread(&filesys_lock))
-	       lock_release(&filesys_lock);
-      if(lock_held_by_current_thread(&frame_lock))
-         lock_release(&filesys_lock);
+
       //printf("%s\n", "memory exception, now exiting\n");
-      exit(-1);
+    exit(-1);
+
   }
   lock_release(&frame_lock);
 }
+
 
 void
 evict_to_swap(){
@@ -219,30 +219,34 @@ evict_to_swap(){
   int i;
   void*to_write;
 
+  //Get frame you want to evict
   eviction_spot = evict_this_frame_in_particular();
   swap_slot = get_open_swap_slot(swap_spots);
   fr = frame_table[eviction_spot];
   old_sup_page = fr->resident;
 
+  //Ensure swap isnt full
   if(swap_slot == BITMAP_ERROR){
     printf("swap full \n");
     exit(-1);
   }
 
-  for(i = 0; i < 8; i++){
+  //Write page to swap
+  for(i = 0; i < SECTORS_PER_PAGE; i++){
     off_t offset;
     offset = i * (BLOCK_SECTOR_SIZE);
     void * buf;
     buf = malloc(BLOCK_SECTOR_SIZE);
     memcpy(buf, fr->kpage + offset, BLOCK_SECTOR_SIZE);
-    block_write(swap_partition, (swap_slot * 8) + i, buf);
+    block_write(swap_partition, (swap_slot * SECTORS_PER_PAGE) + i, buf);
     free(buf);
   }
 
+  //Update swap info
   old_sup_page -> swap_location = swap_slot;
   bitmap_mark(swap_partition, swap_slot);
   
-
+  //Free page for process use
   palloc_free_page(fr->kpage);
   pagedir_clear_page(fr->owner->pagedir, old_sup_page->upage);
   free(frame_table[eviction_spot]);
@@ -252,58 +256,63 @@ evict_to_swap(){
   //printf("%s\n", "finished freeing");
 }
 
+
 void
-insert_into_stack(uint8_t* kpage, struct sup_page* p){
+insert_into_stack(uint8_t* kpage){
+
+  //allocate frame and page to insert into process stack
   struct frame *fr;
+  fr = malloc(sizeof(struct frame));
+  struct sup_page* p=(struct sup_page*)malloc(sizeof(struct sup_page));
+  if(fr == NULL || p == NULL)
+    exit(-1);
+
   bool success;
   struct thread* t=thread_current();
-  //printf("TRying\n");
-  //printf("Stack begin: %x\n", p->k_frame);
-  if(p == NULL){
-    printf("Here\n");
-    fr = malloc(sizeof( struct frame));
-  }
-  else{
-    //printf("There\n");
-    fr = p->k_frame;
-  }
-  //printf("Frame acquired\n");
-  if (kpage != NULL){
+
+  //Set frame and install page to stack
+  if (kpage != NULL)
+  {
     success = install_page (((uint8_t *)PHYS_BASE-(t->stack_pages+1)*PGSIZE),
                                                             kpage, true);
-    //printf("page installed\n");
-    if(success){
-      //printf("success\n\n");
+    if(success)
       t->stack_pages++;
-    }
   } 
   set_frame(fr, kpage, p);
-  //printf("frame been set\n\n\n");
+  //Set sup page properties and insert into sup page table
+  p->allocated=true;
   p->k_frame = fr; 
   p->upage=((uint8_t *)PHYS_BASE-(t->stack_pages+1)*PGSIZE);
+  p->writable=true;
   hash_insert(&thread_current()->spt,&p->hash_elem);
 }
+
 
 
 void
 insert_from_swap(uint8_t* kpage, struct sup_page* p){
   struct frame *fr;
   fr= malloc(sizeof(struct frame));
-  if (kpage == NULL){
+  if (kpage == NULL)
+  {
       printf("kpage null?\n\n");
       exit(-1); //shouldn't get here
   }
+  //Get page from swap
   int i;
-  for(i = 0; i < 8; i++){
+  for(i = 0; i < SECTORS_PER_PAGE; i++)
+  {
     off_t offset;
     offset = i * (BLOCK_SECTOR_SIZE);
     void * buf;
     buf = malloc(BLOCK_SECTOR_SIZE);
     
-    block_read(swap_partition, (p->swap_location * 8) + i, buf);
+    block_read(swap_partition, 
+      (p->swap_location * SECTORS_PER_PAGE) + i, buf);
     memcpy(kpage + offset, buf, BLOCK_SECTOR_SIZE);
     free(buf);
   }
+  //Install page to frame table and page table
   if (!install_page (p->upage, kpage, p->writable))
   {
     palloc_free_page (kpage);
@@ -311,27 +320,25 @@ insert_from_swap(uint8_t* kpage, struct sup_page* p){
     exit(-1);
   }
   set_frame(fr, kpage, p);
-  p ->k_frame = fr;
 }
+
 
 
 void
 insert_from_filesys(uint8_t* kpage, struct sup_page* p){
-  //printf("%d  page_read_bytes: %d\n\n", NULL==hash_find(&(thread_current()->spt), &sp.hash_elem), page_read_bytes);
-  // printf("%s\n", "inserting");
+  //Initialize frame
   struct frame *fr;
-
   fr = malloc(sizeof(struct frame));
   file_seek (p->file, p->file_offset);
 
-
+  //Check that kpage isnt null
   if (kpage == NULL){
-    printf("its definitely this one\n\n");
     exit(-1); //shouldn't get here
   }
 
-
-  if (file_read (p->file, kpage, p->page_read_bytes) != (int) p->page_read_bytes)
+  //Read page from file
+  if (file_read (p->file, kpage, 
+    p->page_read_bytes) != (int) p->page_read_bytes)
     {
       palloc_free_page (kpage);
       printf("file_read failed\n\n");
@@ -339,12 +346,12 @@ insert_from_filesys(uint8_t* kpage, struct sup_page* p){
     }
   memset(kpage + p->page_read_bytes, 0, PGSIZE - p->page_read_bytes);
 
-
+  //Install page
   if (!install_page (p->upage, kpage, p->writable))
     {
       palloc_free_page (kpage);
-      printf("install page failed \n\n");
       exit(-1);
     }
   set_frame(fr, kpage, p);  
 }
+

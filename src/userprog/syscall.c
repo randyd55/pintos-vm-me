@@ -6,6 +6,7 @@
 #include "threads/vaddr.h"
 #include "devices/input.h"
 #include "userprog/pagedir.h"
+#include "vm/frame.h"
 
 static void syscall_handler (struct intr_frame *);
 
@@ -55,9 +56,7 @@ syscall_handler (struct intr_frame *f UNUSED)
       break;
 
     case SYS_READ :
-       if (check_pointer(f->esp + 4) 
-        && check_pointer(*(int*)(f->esp + 8)) 
-        && check_pointer(f->esp + 12))
+       if (check_pointer(*(int*)(f->esp + 8)))
           f->eax = read(*((uint32_t *) (f->esp + 4) ),
             ((void*)*(int*)(f->esp + 8) ),
             *((unsigned *) (f->esp + 12) ));
@@ -150,6 +149,11 @@ halt (void)
 void 
 exit (int status)
 {
+
+  if(lock_held_by_current_thread(&filesys_lock))
+    lock_release(&filesys_lock);
+  if(lock_held_by_current_thread(&frame_lock))
+    lock_release(&frame_lock);
   struct thread *t = thread_current();
   //Set exit status
   t->exit_status = status;
@@ -188,6 +192,7 @@ exec (const char *cmd_line)
 int 
 open (const char *file)
 {
+
     struct file* f_open = NULL;
     int open_spot;
     lock_acquire(&filesys_lock);
@@ -200,6 +205,7 @@ open (const char *file)
       f_open = filesys_open(file); 
       thread_current()->files[open_spot] = f_open;
     }
+
     lock_release(&filesys_lock);
     //Return file descriptor of file in thread(open_spot)
     if(f_open == NULL)

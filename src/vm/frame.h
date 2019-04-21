@@ -20,6 +20,7 @@
 
 
 #define NUM_FRAMES 366
+#define HEURISTIC 3000
 
 struct frame
 {

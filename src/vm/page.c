@@ -36,3 +36,11 @@ page_lookup (const void *address)
 
 	return e != NULL ? hash_entry (e, struct sup_page, hash_elem) : NULL;
 }
+
+void
+destroy_spt(struct hash_elem *q, void* aux){
+	const struct sup_page *s = hash_entry(q, struct sup_page, hash_elem);
+	free(s->k_frame);
+	free(s);
+}
+
