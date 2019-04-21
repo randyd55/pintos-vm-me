@@ -36,17 +36,22 @@ syscall_handler (struct intr_frame *f UNUSED)
         f->eax = exec(((char *) *(int*)(f->esp + 4)));
       else
       	exit(-1);
+      
       break;
 
     case SYS_WRITE :
       if (check_pointer(f->esp +4) 
         && check_pointer(*(int*)(f->esp + 8)) 
-        && check_pointer(f->esp + 12))
+        && check_pointer(f->esp + 12)){
         f->eax = write(*((uint32_t *) (f->esp + 4) ),
           ((void*)*(int*)(f->esp + 8) ),
           *((unsigned *) (f->esp + 12) ));
-      else
+        
+        }
+      else{
+        
       	exit(-1);
+      }
       break;
 
     case SYS_READ :
@@ -56,8 +61,9 @@ syscall_handler (struct intr_frame *f UNUSED)
           f->eax = read(*((uint32_t *) (f->esp + 4) ),
             ((void*)*(int*)(f->esp + 8) ),
             *((unsigned *) (f->esp + 12) ));
-      else
+      else{
       	exit(-1);
+      }
       break;
 
     case SYS_OPEN :
@@ -293,6 +299,7 @@ remove (const char* file)
 int 
 write (int fd, const void *buffer, unsigned size)
 {
+
   //Check for invalid write
   if(buffer==NULL)
     exit(-1);
@@ -317,6 +324,7 @@ write (int fd, const void *buffer, unsigned size)
   {
     written = file_write(t->files[fd],buffer,size); 
   }
+  
   lock_release(&filesys_lock);
   return written;
 }

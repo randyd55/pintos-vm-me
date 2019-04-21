@@ -21,7 +21,6 @@ Dates: April 19th 2019
 void
 init_frame_table(){
   int i;
-
   //Search for an open spot
   for(i = 0; i < NUM_FRAMES; i++){
     frame_table[i] = NULL;
@@ -42,17 +41,18 @@ init_frame_table(){
 
 */
 void
-set_frame(struct frame* f,void* kpage){
+set_frame(struct frame* f,void* kpage, struct sup_page * s){
   int open_spot;
   if(kpage == NULL){
     exit(-1);
   }
-  f->phys_address = kpage;
+  f->kpage = kpage;
   f->owner = thread_current();
-  f->resident = NULL;
+  f->resident = s;
 
   open_spot = get_open_frame();
   if(open_spot == -1){
+          printf("%s\n", "here");
     exit(-1);
   }
 
@@ -76,4 +76,9 @@ get_open_frame(){
       return i;
   }
   return -1;
+}
+
+int evict_this_frame_in_particular()
+{
+  return 10;
 }

@@ -8,14 +8,14 @@ struct sup_page{
 	void *k_frame; 	//points to the frame the page is loaded in, 
 					//NULL if not loaded in
 	void *upage;
-	block_sector_t swap_location; //location in swap, -1 if not 
+	size_t swap_location; //location in swap, -1 if not 
 	struct file * file; //location in file_system, -1 if not
 	off_t file_offset; //offset in file
 	int writable; //indicates if page is writable
 	struct hash_elem hash_elem; //elem for hash table
 	int page_read_bytes; 
 	bool allocated; //true if allocated, false otherwise
-	
+
 };
 
 

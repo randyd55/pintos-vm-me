@@ -114,11 +114,12 @@ start_process (void *file_name_)
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
+    //hash_init(&thread_current()->spt, page_hash, page_less, NULL);
   success = load (file_name, &if_.eip, &if_.esp);
 
 
   /* If load failed, quit. */
-  hash_init(&thread_current()->spt, page_hash, page_less, NULL);
+
   if(init_swap(1000) == NULL){
     printf("failed init swap\n");
     exit(-1);
@@ -521,6 +522,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       /* Calculate how to fill this page.
          We will read PAGE_READ_BYTES bytes from FILE
          and zero the final PAGE_ZERO_BYTES bytes. */
+
       size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
       struct sup_page *sp = (struct sup_page *)malloc(sizeof(struct sup_page));

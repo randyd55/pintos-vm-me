@@ -204,6 +204,7 @@ thread_create (const char *name, int priority,
   sf->ebp = 0;
   t->parent = thread_current();
   /* initializing the hash table for paging*/
+  hash_init(&(t->spt), page_hash, page_less, NULL);
 
   /* Add to run queue. */
   thread_unblock (t);
