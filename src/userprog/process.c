@@ -37,6 +37,7 @@ and exit processes, as well as creating the stack
 #include "threads/malloc.h"
 #include "threads/synch.h"
 #include "vm/frame.h" 
+#include "vm/swap.h"
 #include "vm/page.h" 
 #include "threads/loader.h"
 
@@ -119,8 +120,8 @@ start_process (void *file_name_)
 
 
   /* If load failed, quit. */
-
-  if(init_swap(1000) == NULL){
+  int swap_size = block_size(block_get_role(BLOCK_SWAP)) / SECTORS_PER_PAGE;
+  if(init_swap(swap_size) == NULL){
     printf("failed init swap\n");
     exit(-1);
   }

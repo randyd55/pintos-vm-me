@@ -201,10 +201,7 @@ page_fault (struct intr_frame *f)
   }
   //exit if the faulting address isn't valid/we don't grow the stack 
   else{
-
-      //printf("%s\n", "memory exception, now exiting\n");
     exit(-1);
-
   }
   lock_release(&frame_lock);
 }
@@ -253,7 +250,6 @@ evict_to_swap(){
   old_sup_page->k_frame = NULL;
   frame_table[eviction_spot] = NULL;
 
-  //printf("%s\n", "finished freeing");
 }
 
 
@@ -296,7 +292,7 @@ insert_from_swap(uint8_t* kpage, struct sup_page* p){
   if (kpage == NULL)
   {
       printf("kpage null?\n\n");
-      exit(-1); //shouldn't get here
+      exit(-1);
   }
   //Get page from swap
   int i;
@@ -312,6 +308,7 @@ insert_from_swap(uint8_t* kpage, struct sup_page* p){
     memcpy(kpage + offset, buf, BLOCK_SECTOR_SIZE);
     free(buf);
   }
+
   //Install page to frame table and page table
   if (!install_page (p->upage, kpage, p->writable))
   {

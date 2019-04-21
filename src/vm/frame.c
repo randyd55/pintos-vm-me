@@ -81,5 +81,5 @@ get_open_frame(){
 
 int evict_this_frame_in_particular()
 {
-  return 11;
+  return rand()%NUM_FRAMES;
 }
