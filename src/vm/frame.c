@@ -49,6 +49,7 @@ set_frame(struct frame* f,void* kpage, struct sup_page * s){
   f->kpage = kpage;
   f->owner = thread_current();
   f->resident = s;
+  s->k_frame=f;
 
   open_spot = get_open_frame();
   if(open_spot == -1){
@@ -80,5 +81,5 @@ get_open_frame(){
 
 int evict_this_frame_in_particular()
 {
-  return 10;
+  return 11;
 }

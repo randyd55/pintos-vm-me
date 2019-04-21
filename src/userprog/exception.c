@@ -164,7 +164,7 @@ page_fault (struct intr_frame *f)
 
   
   struct hash_iterator i;
-    printf("Bad address\n");
+    //printf("Bad address: %x\n",fault_addr);
     exit(-1);
   }
 
@@ -178,21 +178,23 @@ page_fault (struct intr_frame *f)
   int open_spot;
   open_spot = get_open_frame();
   uint8_t *kpage = palloc_get_page (PAL_USER | PAL_ZERO);
+  lock_acquire(&frame_lock);
   if(open_spot==-1 && p != NULL){
-    printf("Evict\n");
+    //printf("Evict\n");
     evict_to_swap();
   }
   else if(p != NULL && p->swap_location == -1){
-    printf("Filesys import\n");
+    //printf("Filesys import\n");
     insert_from_filesys(kpage,p);
   }
   else if(p != NULL){
-    printf("Swap import\n");
+    //printf("Swap import\n");
     insert_from_swap(kpage,p);
   }
   else if(write&&fault_addr>file_length(t->executable)*3000-(uint8_t)PHYS_BASE&&
                                                   t->stack_pages<NUM_FRAMES){
-    printf("Stack export\n");
+    p=malloc(sizeof(struct sup_page));
+    //printf("Stack export\n");
     insert_into_stack(kpage,p);
  
   }
@@ -202,10 +204,10 @@ page_fault (struct intr_frame *f)
 	       lock_release(&filesys_lock);
       if(lock_held_by_current_thread(&frame_lock))
          lock_release(&filesys_lock);
-      printf("%s\n", "memory exception, now exiting\n");
+      //printf("%s\n", "memory exception, now exiting\n");
       exit(-1);
   }
-
+  lock_release(&frame_lock);
 }
 
 void
@@ -251,39 +253,40 @@ evict_to_swap(){
 }
 
 void
-insert_into_stack(uint32_t* kpage, struct sup_page* p){
+insert_into_stack(uint8_t* kpage, struct sup_page* p){
   struct frame *fr;
   bool success;
   struct thread* t=thread_current();
-  printf("Stack begin: %x\n", p->k_frame);
-  if(p->k_frame == NULL){
+  //printf("TRying\n");
+  //printf("Stack begin: %x\n", p->k_frame);
+  if(p == NULL){
     printf("Here\n");
     fr = malloc(sizeof( struct frame));
   }
   else{
-    printf("There\n");
+    //printf("There\n");
     fr = p->k_frame;
   }
-  printf("Frame acquired\n");
+  //printf("Frame acquired\n");
   if (kpage != NULL){
     success = install_page (((uint8_t *)PHYS_BASE-(t->stack_pages+1)*PGSIZE),
                                                             kpage, true);
-    printf("page installed\n");
+    //printf("page installed\n");
     if(success){
-      printf("success\n\n");
+      //printf("success\n\n");
       t->stack_pages++;
     }
   } 
   set_frame(fr, kpage, p);
-  printf("frame been set\n\n\n");
+  //printf("frame been set\n\n\n");
   p->k_frame = fr; 
   p->upage=((uint8_t *)PHYS_BASE-(t->stack_pages+1)*PGSIZE);
-  hash_insert(&thread_current()->spt, &p->hash_elem);
+  hash_insert(&thread_current()->spt,&p->hash_elem);
 }
 
 
 void
-insert_from_swap(uint32_t* kpage, struct sup_page* p){
+insert_from_swap(uint8_t* kpage, struct sup_page* p){
   struct frame *fr;
   fr= malloc(sizeof(struct frame));
   if (kpage == NULL){
@@ -313,7 +316,7 @@ insert_from_swap(uint32_t* kpage, struct sup_page* p){
 
 
 void
-insert_from_filesys(uint32_t* kpage, struct sup_page* p){
+insert_from_filesys(uint8_t* kpage, struct sup_page* p){
   //printf("%d  page_read_bytes: %d\n\n", NULL==hash_find(&(thread_current()->spt), &sp.hash_elem), page_read_bytes);
   // printf("%s\n", "inserting");
   struct frame *fr;
